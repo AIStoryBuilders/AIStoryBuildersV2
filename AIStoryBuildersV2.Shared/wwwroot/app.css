@@ -1,0 +1,31 @@
+:root {
+  --asb-accent: #5B4FD6;
+  --asb-ink: #1c1a27;
+  --asb-muted: #6b6676;
+  --asb-bg: #edebf2;
+  --asb-panel: #ffffff;
+  --asb-line: #e4e1ec;
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; color: var(--asb-ink); background: var(--asb-bg); }
+
+.asb-app { min-height: 100vh; display: flex; flex-direction: column; }
+.asb-header { height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 20px;
+  background: var(--asb-panel); border-bottom: 1px solid var(--asb-line); }
+.asb-brand { font-weight: 700; letter-spacing: -0.01em; }
+.asb-sp { flex: 1; }
+.asb-main { flex: 1; min-height: 0; padding: 24px; }
+.asb-footer { padding: 12px 20px; border-top: 1px solid var(--asb-line); background: var(--asb-panel);
+  font-size: 12px; color: var(--asb-muted); }
+.asb-footer a { color: var(--asb-muted); }
+
+.asb-home { max-width: 760px; margin: 0 auto; line-height: 1.55; }
+.asb-home h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: -0.01em; }
+.asb-home code { background: var(--asb-panel); border: 1px solid var(--asb-line); border-radius: 6px; padding: 1px 6px; }
+.asb-card { background: var(--asb-panel); border: 1px solid var(--asb-line); border-radius: 12px; padding: 16px 18px; margin: 14px 0; }
+
+#blazor-error-ui { display: none; position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px;
+  background: #fdecea; color: #7d1a14; z-index: 1000; }
+#blazor-error-ui .reload { color: inherit; margin-left: 8px; }
+#blazor-error-ui .dismiss { cursor: pointer; float: right; }
