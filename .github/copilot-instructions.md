@@ -1,5 +1,8 @@
 # AIStoryBuildersV2 — instructions for AI coding agents
 
+> **Start with [AGENTS.md](../AGENTS.md) and [Docs/AIStoryBuildersV2-Plan.md](../Docs/AIStoryBuildersV2-Plan.md).** They
+> take precedence over this file. The plan retargets the solution to .NET 11 (task T0).
+
 This is a .NET 10 MAUI (Windows) + Blazor WebAssembly app sharing the `AIStoryBuildersV2.Shared`
 Razor class library (same structure as KnowledgeGraphBuilder).
 

@@ -1,0 +1,109 @@
+# Development environment
+
+How to set up, run and verify AIStoryBuildersV2. It goes with [AIStoryBuildersV2-Plan.md](AIStoryBuildersV2-Plan.md).
+This file contains no secrets. Supply keys only through environment variables or the app's Settings page.
+
+## 1. Toolchain
+
+| Item | Version | Notes |
+|---|---|---|
+| Windows | 10.0.19041 or later | The MAUI app's Windows TFM is `net11.0-windows10.0.19041.0` |
+| .NET SDK | `11.0.100-rc.3.26522.148` | Pinned in `global.json` after T0 (plan §6.6), with `allowPrerelease: true`. The .NET 10 SDKs can stay installed. |
+| MAUI workload | Must match the rc.3 SDK | Today the workloads are **managed by Visual Studio 18.11** at the `11.0.100-preview.6` manifest, so `dotnet workload update` cannot change them. See §2. |
+| Visual Studio | 18.x with the .NET MAUI workload | Optional for the Web app, practical for MAUI debugging |
+| Aspire | `Aspire.AppHost.Sdk 13.6.4`, `Aspire.Hosting.Maui 13.6.4-preview.1.26523.11` | Dev-time only (plan G1). The `aspire` CLI is optional. |
+| Node.js | not required | Use any static file server for the published WASM smoke test (§4). `npx serve -s` is one option. |
+
+Check the toolchain:
+
+```bash
+dotnet --list-sdks
+```
+
+```bash
+dotnet workload list
+```
+
+## 2. Workloads (T0)
+
+1. Open **Visual Studio Installer**, update Visual Studio to a build that includes .NET 11 RC 3 MAUI, and keep the **.NET MAUI** workload selected.
+2. Alternatively, install a CLI-managed workload for the rc.3 SDK. Run it from a folder without a `global.json`, or after T0 has pinned 11.0:
+
+   ```bash
+   dotnet workload install maui-windows
+   ```
+
+3. Record the `dotnet workload list` output in the T0 commit.
+
+Only `maui-windows` is needed by default. The mobile targets are built only with `-p:IncludeMobileTargets=true`.
+
+## 3. Running the apps
+
+| App | Command | Where it runs |
+|---|---|---|
+| WASM, without Aspire | `dotnet run --project AIStoryBuildersV2.Web --launch-profile http` | `http://localhost:5022` (`https://localhost:7213` with the `https` profile), from [launchSettings.json](../AIStoryBuildersV2.Web/Properties/launchSettings.json) |
+| MAUI, without Aspire | Visual Studio: set the startup project to `AIStoryBuildersV2` and the target to **Windows Machine**. CLI: `dotnet build AIStoryBuildersV2/AIStoryBuildersV2.csproj -f net11.0-windows10.0.19041.0 -t:Run` | A desktop window |
+| Both, with Aspire | `aspire run` from the repo root (it reads `aspire.config.json`), or run `AIStoryBuildersV2.AppHost` | Dashboard on the AppHost profile ports. Resources: `aistorybuildersv2-windows` (start it from the dashboard) and `web`. |
+
+`AIStoryBuildersV2/AIStoryBuildersV2.csproj.user` still names `net10.0-windows10.0.19041.0` as the active debug framework. Visual Studio rewrites it after T0. The file is user-local, so don't commit changes to it.
+
+## 4. Publishing and serving the WASM app
+
+```bash
+dotnet publish AIStoryBuildersV2.Web -c Release
+```
+
+Serve `AIStoryBuildersV2.Web/bin/Release/net11.0/publish/wwwroot` from any static server. The server must:
+
+- fall back to `index.html` for unknown paths
+- serve `.wasm` as `application/wasm`, and serve `.onnx` and `.dat` as `application/octet-stream`
+- keep the `<base href>` correct when the app runs under a sub-path. Test this once with a sub-path, because D18 depends on it.
+
+## 5. Steps that need a person
+
+An agent can't complete these on its own. Leave them unchecked and report them (AGENTS.md, "How to work").
+
+| Task | Step | What the person does |
+|---|---|---|
+| T0 | Workload update | §2 |
+| T2b | Golden fixtures | Copy `AIStoryBuildersV2.Tests/Fixtures/V1Story/before/` into `Documents\AIStoryBuilders\` on a machine with V1 installed. Do each operation in [Test-Data.md](Test-Data.md) §3 in the V1 UI. Copy each result back to `after-<operation>/` and commit it. **Back up your own V1 stories first**, and remove the fixture story afterwards. |
+| T5, T6, T7b, T16, T17 | Live provider checks | Set the §6 variables, or enter a key in Settings |
+| T6 | A model that fails the probe | Run Ollama locally with a model that has no tool support, set `OLLAMA_ORIGINS` (§7), and try to verify it |
+| T9a, T10a, T18 | V1 coexistence | Open a V2-edited story in V1 and the reverse, and import V2's `.stybld` into V1 |
+| T11, T15 | Visual match | Compare with the artboards at 1440 px |
+| T12b | Speech-to-text in WebView2 | Try the microphone button in the MAUI app |
+
+## 6. Environment variables (opt-in live tests)
+
+Live tests are skipped unless these are set. Never commit values.
+
+| Variable | Example value | Used by |
+|---|---|---|
+| `ASB_LIVE_PROVIDER` | `Anthropic`, `OpenAI`, `AzureOpenAI`, `GoogleAI` or `Ollama` | T7b, T16 integration tests |
+| `ASB_LIVE_KEY` | `<api-key>` | same |
+| `ASB_LIVE_MODEL` | `<model-id>` (must be one that passes the probe) | same |
+| `ASB_LIVE_ENDPOINT` | `https://<resource>.openai.azure.com/` or `http://<ollama-host>:11434/` | Azure and Ollama only |
+
+PowerShell, for the current session only:
+
+```powershell
+$env:ASB_LIVE_PROVIDER = 'Anthropic'; $env:ASB_LIVE_KEY = '<api-key>'; $env:ASB_LIVE_MODEL = '<model-id>'
+```
+
+## 7. Provider notes for the browser (WASM)
+
+| Provider | Browser requirement |
+|---|---|
+| Anthropic | Works directly. The client sends the `anthropic-dangerous-direct-browser-access` header. |
+| OpenAI | Works directly (Online does this today) |
+| Azure OpenAI | The resource must allow the app's origin in CORS **(assumed; verify in T6)** |
+| Google AI | The key goes in a header (D8). CORS is verified in T6. |
+| Ollama | Start Ollama with `OLLAMA_ORIGINS` set to the app's origin, for example `http://localhost:5022` |
+
+## 8. Where data lives during development
+
+| App | Location | How to reset |
+|---|---|---|
+| MAUI | `Documents\AIStoryBuilders`, **shared with V1** (D4) | Back it up first. Delete only test stories, never the whole folder. |
+| MAUI settings | Preferences `asb.llm.*` and SecureStorage `asb.llm.apiKey` | Settings → Clear key |
+| WASM | `localStorage` keys `asb2:*` for the dev origin | DevTools → Application → Storage → Clear site data |
