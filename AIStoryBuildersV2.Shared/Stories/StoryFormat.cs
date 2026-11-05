@@ -110,7 +110,18 @@ public static class StoryFormat
         value = default;
         if (string.IsNullOrWhiteSpace(text)) return false;
         var normalized = text.Replace(' ', ' ').Replace(' ', ' ').Trim();
-        foreach (var culture in new[] { CultureInfo.CurrentCulture, EnUs, CultureInfo.InvariantCulture })
+        var cultures = new[] { CultureInfo.CurrentCulture, EnUs, CultureInfo.InvariantCulture };
+
+        // Exact patterns first: a loose parse would read en-US "11/1/2026" day-first under de-DE.
+        foreach (var culture in cultures)
+        {
+            var patterns = culture.DateTimeFormat.GetAllDateTimePatterns('g')
+                .Concat(culture.DateTimeFormat.GetAllDateTimePatterns('G'))
+                .Select(p => p.Replace(' ', ' ').Replace(' ', ' '))
+                .ToArray();
+            if (DateTime.TryParseExact(normalized, patterns, culture, DateTimeStyles.AllowWhiteSpaces, out value)) return true;
+        }
+        foreach (var culture in cultures)
         {
             if (DateTime.TryParse(normalized, culture, DateTimeStyles.AllowWhiteSpaces, out value)) return true;
         }

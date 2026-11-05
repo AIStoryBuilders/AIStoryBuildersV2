@@ -23,7 +23,7 @@ public class ReaderToleranceTests : IDisposable
         File.WriteAllText(Ch1("Paragraph1.txt"), "Ridge|Present Day|[Freya]|Line one.\r\nLine two.|" + FixtureVectors.Format("x"));
         var p = _f.Service.GetParagraphs(_f.Chapter(1))[0];
         Assert.Equal("Line one.\nLine two.", p.ParagraphContent);
-        Assert.NotNull(_f.Service.GetAllParagraphVectorsForChapter(_f.Chapter(1)).Single(e => e.Id == "Ch1_P1"));
+        Assert.Single(_f.Service.GetAllParagraphVectorsForChapter(_f.Chapter(1)), e => e.Id == "Ch1_P1");
     }
 
     [Fact]
