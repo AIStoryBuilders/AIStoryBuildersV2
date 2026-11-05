@@ -1,0 +1,2 @@
+# Story fixtures are compared byte for byte with what V1 writes (CRLF, no trailing newline, LF in KB pages).
+AIStoryBuildersV2.Tests/Fixtures/** -text

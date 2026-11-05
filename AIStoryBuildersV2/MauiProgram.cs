@@ -33,6 +33,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IHostCapabilities>(new MauiHostCapabilities(root));
         builder.Services.AddSingleton<IFileExportService, MauiFileExportService>();
         builder.Services.AddSingleton<IStoryPersistence, DiskStoryPersistence>();
+        builder.Services.AddSingleton<IStoryLibraryStore>(new CsvStoryLibraryStore(root));
+        builder.Services.AddSingleton<IAppDataStore>(new FileAppDataStore(root));
         builder.Services.AddAIStoryBuildersV2Shared();
 
 #if DEBUG
@@ -40,7 +42,12 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
-        return builder.Build();
+        var app = builder.Build();
+
+        // Load the log before the first page writes to it. The host may block here; Shared code never does (D25).
+        Task.Run(() => app.Services.GetRequiredService<LogService>().InitializeAsync()).GetAwaiter().GetResult();
+
+        return app;
     }
 
     /// <summary>
