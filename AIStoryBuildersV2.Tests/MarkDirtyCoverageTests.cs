@@ -24,6 +24,29 @@ public class MarkDirtyCoverageTests
         ["AddUpdateCharacterAsync"] = f => f.Service.AddUpdateCharacterAsync(new Character { Story = f.Story, CharacterName = "Odin", CharacterBackground = [] }, "Odin"),
         ["UpdateCharacterNameAsync"] = f => f.Service.UpdateCharacterNameAsync(new Character { Story = f.Story, CharacterName = "Freyja" }, "Freya"),
         ["DeleteCharacter"] = f => { f.Service.DeleteCharacter(new Character { Story = f.Story, CharacterName = "Father" }, "Father"); return Task.CompletedTask; },
+
+        ["UpdateStoryAsync"] = f => f.Service.UpdateStoryAsync(new Story { Title = f.Story.Title, Style = "Drama", Theme = "", Synopsis = "", WorldFacts = "" }),
+        ["AddStory (WriteNewStoryAsync)"] = f => f.Service.WriteNewStoryAsync(new Story { Title = f.Story.Title }, new() { characters = [], locations = [], timelines = [] }, new() { chapter = [] }),
+
+        ["AddChapterAsync"] = f => f.Service.AddChapterAsync(new Chapter { Story = f.Story, Synopsis = "x" }, "Chapter3"),
+        ["InsertChapterAsync"] = f => f.Service.InsertChapterAsync(new Chapter { Story = f.Story, ChapterName = "Chapter 3", Synopsis = "x" }),
+        ["UpdateChapterAsync"] = f => f.Service.UpdateChapterAsync(new Chapter { Story = f.Story, ChapterName = "Chapter 1", Synopsis = "x" }),
+        ["DeleteChapter"] = f => { f.Service.DeleteChapter(f.Chapter(2)); return Task.CompletedTask; },
+        ["RestructureChapters"] = f => { f.Service.RestructureChapters(f.Chapter(1), RestructureType.Add); return Task.CompletedTask; },
+        ["RestructureParagraphs"] = f => { f.Service.RestructureParagraphs(f.Chapter(1), 1, RestructureType.Add); return Task.CompletedTask; },
+
+        ["AddParagraph"] = f => { f.Service.AddParagraph(f.Chapter(1), Paragraph(2)); return Task.CompletedTask; },
+        ["UpdateParagraph"] = f => f.Service.UpdateParagraph(f.Chapter(1), Paragraph(1)),
+        ["DeleteParagraph"] = f => { f.Service.DeleteParagraph(f.Chapter(1), Paragraph(1)); return Task.CompletedTask; },
+    };
+
+    static Paragraph Paragraph(int sequence) => new()
+    {
+        Sequence = sequence,
+        ParagraphContent = "x",
+        Location = new Location { LocationName = "Ridge" },
+        Timeline = new Timeline { TimelineName = "" },
+        Characters = [],
     };
 
     static Timeline Timeline(ServiceFixture f, string? rename = null)

@@ -53,4 +53,28 @@ public class GoldenOperationTests : IDisposable
         await _f.Service.UpdateCharacterNameAsync(freya, "Freya");
         AssertMatches(golden);
     }
+
+    [SkippableFact]
+    public void Add_paragraph()
+    {
+        var golden = Golden("add-paragraph");
+        _f.Service.AddParagraph(_f.Chapter(1), new Paragraph
+        {
+            Sequence = 2,
+            Location = new Location { LocationName = "Ridge" },
+            Timeline = new Timeline { TimelineName = "Years Before" },
+            Characters = [new Character { CharacterName = "Balt" }],
+        });
+        AssertMatches(golden);
+    }
+
+    [SkippableFact]
+    public void Delete_chapter()
+    {
+        var golden = Golden("delete-chapter");
+        var chapter = _f.Chapter(1);
+        _f.Service.DeleteChapter(chapter);
+        _f.Service.RestructureChapters(chapter, RestructureType.Delete);
+        AssertMatches(golden);
+    }
 }
