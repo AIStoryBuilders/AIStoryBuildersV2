@@ -117,25 +117,30 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(story.Title);
+            Touched(story.Title);
         }
     }
 
     /// <summary>V1's UpdateStory, async over the library store (D25). Free text loses line breaks and '|'.</summary>
     public async Task UpdateStoryAsync(Story story)
     {
+        try
+        {
+            await SaveStoryRowAsync(story);
+        }
+        finally
+        {
+            Touched(story.Title);
+        }
+    }
+
+    private Task SaveStoryRowAsync(Story story)
+    {
         story.Style = StoryFormat.CleanField(story.Style);
         story.Theme = StoryFormat.CleanField(story.Theme);
         story.Synopsis = StoryFormat.CleanField(story.Synopsis);
         story.WorldFacts = StoryFormat.CleanField(story.WorldFacts);
-        try
-        {
-            await _library.UpsertAsync(ToIndexEntry(story));
-        }
-        finally
-        {
-            _persistence.MarkDirty(story.Title);
-        }
+        return _library.UpsertAsync(ToIndexEntry(story));
     }
 
     /// <summary>Removes the library entry, then the stored copy (WASM), then the folder (D25).</summary>
@@ -203,7 +208,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -217,7 +222,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -231,7 +236,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -249,7 +254,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -295,7 +300,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
     #endregion
@@ -318,7 +323,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -342,7 +347,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -361,7 +366,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -378,7 +383,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(objChapter.Story.Title);
+            Touched(objChapter.Story.Title);
         }
     }
 

@@ -112,15 +112,21 @@ public sealed class MemoryAppDataStore : IAppDataStore
 /// <summary>An <see cref="AIStoryBuildersService"/> over a temp stories root, with fixture vectors.</summary>
 public sealed class ServiceFixture : IDisposable
 {
-    public ServiceFixture(bool writeBefore = true)
+    public ServiceFixture(bool writeBefore = true, IChatClient? chat = null)
     {
         if (writeBefore) FixtureFactory.WriteBefore(Dir.Path);
         Log = new LogService(AppData) { SaveDelay = TimeSpan.FromMinutes(10) };
         Library = new CsvStoryLibraryStore(Dir.Path);
-        var orchestrator = new OrchestratorMethods(Log, new DatabaseService(AppData), Embeddings);
-        Service = new AIStoryBuildersService(new TestHost(Dir.Path), Library, Persistence, Log, Embeddings, orchestrator,
-            new StoryGraphCache(), new GraphBuilder(), new AppMetadata { Version = StoryStorageConstants.StybldFormatVersion });
+        Chat = chat ?? new ScriptedChatClient();
+        Orchestrator = new OrchestratorMethods(Log, new DatabaseService(AppData), Embeddings, new FakeChatClientProvider(Chat), new StubSettings(),
+            new StubSettings(), new HttpClient());
+        Service = new AIStoryBuildersService(new TestHost(Dir.Path), Library, Persistence, Log, Embeddings, Orchestrator,
+            GraphCache, new GraphBuilder(), new AppMetadata { Version = StoryStorageConstants.StybldFormatVersion });
     }
+
+    public IChatClient Chat { get; }
+    public OrchestratorMethods Orchestrator { get; }
+    public StoryGraphCache GraphCache { get; } = new();
 
     public TempDir Dir { get; } = new();
     public MemoryAppDataStore AppData { get; } = new();
@@ -258,4 +264,19 @@ public sealed class StubProbe(bool pass = true, ProbeStage failAt = ProbeStage.T
         Calls.Add(options);
         return Task.FromResult(pass ? new ModelProbeResult(true, null, null, TimeSpan.Zero) : new ModelProbeResult(false, failAt, message, TimeSpan.Zero));
     }
+}
+
+/// <summary>An <see cref="IAppSettingsService"/> with fixed settings.</summary>
+public sealed class StubSettings(Shared.Llm.LlmProvider provider = Shared.Llm.LlmProvider.OpenAI, string model = "test-model") : IAppSettingsService, IOpenAIKeyAccess
+{
+    public Task<AppSettings> GetAsync() => Task.FromResult(new AppSettings("Test", provider, model, null, true,
+        [new VerifiedModel(provider, null, model, Shared.Llm.ProbeConstants.Version, DateTimeOffset.UtcNow)]));
+    public Task<SettingsSaveResult> SaveAsync(Shared.Llm.LlmProvider p, string m, string? e, string? k, CancellationToken ct) => throw new NotSupportedException();
+    public Task ClearApiKeyAsync() => Task.CompletedTask;
+    public Task<string?> TestConnectionAsync(CancellationToken ct) => Task.FromResult<string?>(null);
+    public Task<Shared.Llm.ModelListResult> ListModelsAsync(Shared.Llm.LlmProvider p, string? e, string? k, bool r, CancellationToken ct) => Task.FromResult(Shared.Llm.ModelListResult.Success([model]));
+    public Task<ModelProbeResult> VerifyModelAsync(string m, CancellationToken ct) => Task.FromResult(new ModelProbeResult(true, null, null, TimeSpan.Zero));
+    public Task RemoveVerifiedModelAsync(string m) => Task.CompletedTask;
+    public Task<string?> GetOpenAIKeyAsync() => Task.FromResult<string?>(provider == Shared.Llm.LlmProvider.OpenAI ? "sk-test" : null);
+    public event Action? Changed { add { } remove { } }
 }

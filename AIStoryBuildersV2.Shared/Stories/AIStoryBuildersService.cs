@@ -69,6 +69,13 @@ public partial class AIStoryBuildersService
         if (!Directory.Exists(path)) Directory.CreateDirectory(path);
     }
 
+    /// <summary>After a write under {Title}/: save it (WASM) and mark the story graph stale (§6.2, D17).</summary>
+    private void Touched(string title)
+    {
+        _persistence.MarkDirty(title);
+        _graphCache.MarkDirty(title);
+    }
+
     protected void RaiseText(string message, int displayLength) => TextEvent?.Invoke(this, new TextEventArgs(message, displayLength));
 
     // Knowledge Graph Persistence

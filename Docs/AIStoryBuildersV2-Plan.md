@@ -1124,11 +1124,11 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
     - a known tool-capable model verifies
     - a model without tool support (for example a small Ollama model) is refused, with the stage named
     - Settings' default-model dropdown offers only verified models
-- [ ] **T7a: Client plumbing.** `OrchestratorMethods` gets `IChatClientProvider` and the per-call model. `ChatOptionsFactory` switches on `LlmProvider`. Wrap clients in `TemperatureFallbackChatClient`. Replace the 23 `SettingsService.*` uses (D31). Port `LlmCallHelper`, `JsonRepairUtility` and `TokenEstimator`.
+- [x] **T7a: Client plumbing.** `OrchestratorMethods` gets `IChatClientProvider` and the per-call model. `ChatOptionsFactory` switches on `LlmProvider`. Wrap clients in `TemperatureFallbackChatClient`. Replace the 23 `SettingsService.*` uses (D31). Port `LlmCallHelper`, `JsonRepairUtility` and `TokenEstimator`.
   - *Done when:* there are no `SettingsService` references left, and the `ChatOptionsFactory` and `LlmCallHelper` tests pass with `FakeChatClient`.
-- [ ] **T7b: Orchestrator methods and RAG.** `ParseNewStory`, `CreateNewChapters`, `WriteParagraph`, `DetectCharacters`, `DetectCharacterAttributes`, `GetStoryBeats`, the manuscript methods, the prompts, and `CreateMasterStory` RAG with `MasterStoryBuilder`.
+- [x] **T7b: Orchestrator methods and RAG.** `ParseNewStory`, `CreateNewChapters`, `WriteParagraph`, `DetectCharacters`, `DetectCharacterAttributes`, `GetStoryBeats`, the manuscript methods, the prompts, and `CreateMasterStory` RAG with `MasterStoryBuilder`.
   - *Done when:* each method runs against `FakeChatClient` in a test. An opt-in integration test runs `WriteParagraph` against a real provider when the `ASB_LIVE_PROVIDER` and `ASB_LIVE_KEY` environment variables are set.
-- [ ] **T8: Story graph.** Port `GraphQueryService`, `GraphMutationService` and `TimelineSummaryGenerator`. Fill in `StoryGraphCache` (created empty in T2a) and add `StoryGraphContext` (D26). Port `ReloadStoryAsync` and `EnsureGraphExistsAsync`.
+- [x] **T8: Story graph.** Port `GraphQueryService`, `GraphMutationService` and `TimelineSummaryGenerator`. Fill in `StoryGraphCache` (created empty in T2a) and add `StoryGraphContext` (D26). Port `ReloadStoryAsync` and `EnsureGraphExistsAsync`.
   - *Done when:* a test runs `ReloadStoryAsync` on the fixture and writes `Graph/*.json` with V1's schema (compared to a golden file), and the `StoryGraphContext` tests pass.
 - [ ] **T9a: Library, New Story and Import Story.** Story cards, `NewStoryDialog` (AI generation, verified models only), and `.stybld` import and export (50 MB, manual extraction, D6).
   - *Done when:* a story is created by AI in both apps, a V1 `.stybld` imports, the §10 `.stybld` tests pass, and a V2-exported `.stybld` imports into V1.

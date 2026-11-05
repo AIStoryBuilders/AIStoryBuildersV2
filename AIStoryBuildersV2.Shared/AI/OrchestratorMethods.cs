@@ -1,10 +1,13 @@
 #nullable disable
+using AIStoryBuildersV2.Shared.Llm;
+using AIStoryBuildersV2.Shared.Settings;
 using Microsoft.Extensions.AI;
 
 namespace AIStoryBuildersV2.Shared.AI;
 
 /// <summary>
-/// V1's AI orchestration (AI/OrchestratorMethods*.cs). T2a ports the non-AI helpers; the AI methods arrive in T7a/T7b.
+/// V1's AI orchestration (AI/OrchestratorMethods*.cs). Every AI call gets its client from
+/// <see cref="IChatClientProvider.GetClientAsync"/> for the model the caller chose (D9, D10); V1's SettingsService is gone (D31).
 /// </summary>
 public partial class OrchestratorMethods
 {
@@ -14,13 +17,35 @@ public partial class OrchestratorMethods
     public DatabaseService DatabaseService { get; }
 
     readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
+    readonly IChatClientProvider _clients;
+    readonly IAppSettingsService _settings;
+    readonly IOpenAIKeyAccess _openAI;
+    readonly HttpClient _http;
 
-    public OrchestratorMethods(LogService logService, DatabaseService databaseService, IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator)
+    public OrchestratorMethods(LogService logService, DatabaseService databaseService, IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
+        IChatClientProvider clients, IAppSettingsService settings, IOpenAIKeyAccess openAI, HttpClient http)
     {
         LogService = logService;
         DatabaseService = databaseService;
         _embeddingGenerator = embeddingGenerator;
+        _clients = clients;
+        _settings = settings;
+        _openAI = openAI;
+        _http = http;
     }
+
+    // Clients
+
+    /// <summary>The client for <paramref name="model"/> (the default model when null), or an exception with the provider's reason.</summary>
+    protected async Task<IChatClient> GetChatClientAsync(string model)
+    {
+        var result = await _clients.GetClientAsync(model);
+        return result.Ok ? result.Client : throw new InvalidOperationException(result.Reason);
+    }
+
+    protected async Task<string> DefaultModelAsync() => (await _settings.GetAsync()).Model;
+
+    protected async Task<LlmProvider> ProviderAsync() => (await _settings.GetAsync()).Provider;
 
     // Memory and Vectors
 
@@ -75,6 +100,9 @@ public partial class OrchestratorMethods
 
     /// <summary>V1's SanitizeFileName (invalid file-name characters and '|' removed, not trimmed).</summary>
     public string SanitizeFileName(string input) => StoryFormat.SanitizeFileName(input);
+
+    /// <summary>Extracts and repairs JSON from LLM response text (V1).</summary>
+    public static string ExtractJson(string json) => JsonRepairUtility.ExtractAndRepair(json);
 
     /// <summary>A paragraph's character list. Unlike V1, names are trimmed and empty entries dropped (Test-Data §4).</summary>
     public static List<string> ParseStringToList(string input) => StoryFormat.ParseCharacterList(input);

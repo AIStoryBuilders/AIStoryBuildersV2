@@ -28,7 +28,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -49,7 +49,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -72,7 +72,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -91,7 +91,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -145,7 +145,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -162,7 +162,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -185,7 +185,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -209,7 +209,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -243,7 +243,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -262,7 +262,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 
@@ -293,7 +293,7 @@ public partial class AIStoryBuildersService
         }
         finally
         {
-            _persistence.MarkDirty(title);
+            Touched(title);
         }
     }
 

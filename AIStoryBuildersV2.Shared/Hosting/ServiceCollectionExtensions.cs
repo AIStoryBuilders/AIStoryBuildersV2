@@ -39,6 +39,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AppSettingsService>();
         services.AddSingleton<IAppSettingsService>(sp => sp.GetRequiredService<AppSettingsService>());
         services.AddSingleton<IChatClientProvider>(sp => sp.GetRequiredService<AppSettingsService>());
+        services.AddSingleton<IOpenAIKeyAccess>(sp => sp.GetRequiredService<AppSettingsService>());
+
+        // Story graph (D17, D26) and manuscript import.
+        services.AddSingleton<IGraphQueryService, GraphQueryService>();
+        services.AddSingleton<IGraphMutationService, GraphMutationService>();
+        services.AddSingleton<ITimelineSummaryGenerator, TimelineSummaryGenerator>();
+        services.AddSingleton<ManuscriptParsingService>();
         return services;
     }
 }

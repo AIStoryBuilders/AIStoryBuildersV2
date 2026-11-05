@@ -38,6 +38,17 @@ public class MarkDirtyCoverageTests
         ["AddParagraph"] = f => { f.Service.AddParagraph(f.Chapter(1), Paragraph(2)); return Task.CompletedTask; },
         ["UpdateParagraph"] = f => f.Service.UpdateParagraph(f.Chapter(1), Paragraph(1)),
         ["DeleteParagraph"] = f => { f.Service.DeleteParagraph(f.Chapter(1), Paragraph(1)); return Task.CompletedTask; },
+
+        ["ReloadStoryAsync"] = async f => await f.Service.ReloadStoryAsync((await f.Service.GetStorysAsync()).Single()),
+        ["ReEmbedStory"] = f => f.Service.ReEmbedStory(f.Story),
+        ["EnsureGraphExistsAsync"] = f => f.Service.EnsureGraphExistsAsync(f.Story.Title),
+        ["CreateMasterStory"] = async f =>
+        {
+            var story = (await f.Service.GetStorysAsync()).Single();
+            var chapter = new Chapter { ChapterName = "Chapter 1", Sequence = 1, Synopsis = "x", Story = story, Paragraph = [] };
+            var paragraph = f.Service.GetParagraphs(chapter)[0];
+            await f.Service.CreateMasterStory(chapter, paragraph, [], [], new AIPrompt { AIPromptText = "x", NumberOfWords = "10" });
+        },
     };
 
     static Paragraph Paragraph(int sequence) => new()
