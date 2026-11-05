@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGraphMutationService, GraphMutationService>();
         services.AddSingleton<ITimelineSummaryGenerator, TimelineSummaryGenerator>();
         services.AddSingleton<ManuscriptParsingService>();
+        services.AddSingleton<ParagraphAiHelper>();
         return services;
     }
 }
