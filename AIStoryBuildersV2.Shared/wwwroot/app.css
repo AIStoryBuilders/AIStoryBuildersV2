@@ -291,3 +291,16 @@ h3.asb-ws-sec { font-size: 18px; font-weight: 700; margin: 0 0 16px; color: var(
 .asb-chat-md th, .asb-chat-md td { border: 1px solid #ddd; padding: .4em .6em; text-align: left; }
 .asb-chat-md th { background: #f5f5f5; font-weight: 600; }
 .asb-chat-md hr { border: none; border-top: 1px solid #ddd; margin: .8em 0; }
+
+/* ---------- knowledgebase tab (StoryWorkspace.dc.html KNOWLEDGEBASE) ---------- */
+.asb-kb { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--asb-panel); }
+.asb-kb-bar { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--asb-line); background: var(--asb-panel); }
+.asb-seg { display: inline-flex; border: 1px solid var(--asb-line); border-radius: 9px; overflow: hidden; background: #fff; }
+.asb-seg button { display: inline-flex; align-items: center; gap: 6px; border: none; background: #fff; font: inherit; font-size: 12.5px; font-weight: 600;
+  color: var(--asb-muted); padding: 7px 13px; cursor: pointer; }
+.asb-seg button + button { border-left: 1px solid var(--asb-line); }
+.asb-seg button.on { background: var(--asb-accent-soft); color: var(--asb-accent); }
+.asb-kb-stat { font-size: 11.5px; color: var(--asb-muted); }
+.asb-kb-main { flex: 1; min-height: 0; display: flex; }
+.asb-kb-main > .kgb-graph { flex: 1; min-width: 0; }
+.asb-linkbtn { border: none; background: none; padding: 0; font: inherit; cursor: pointer; }

@@ -1150,7 +1150,7 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
   - *Done when:* "Who does Balt interact with in chapter 2?" answers from graph tools in both apps, and a graph mutation asks for confirmation as V1 does.
 - [x] **T14: Per-story KB core.** Port KGB `Knowledge/` and `Markdown/` (D12), plus `StoryKnowledgeBaseProvider`, `TickTrackingKnowledgeStore`, `CurrentStoryKnowledgeBase` and `KbLinkBuilder`. Wire the persistence hook.
   - *Done when:* the ported KGB tests, the provider isolation tests and the ticks tests pass, and a test round-trips a story with KB pages through `.stybld`.
-- [ ] **T15: Knowledgebase tab.** `KnowledgeBaseTab`, plus the ported `ExplorerPane`, `EditorPane`, `LinksPanel` and dialogs, rewired to `ICurrentStoryKnowledgeBase`. `KnowledgeGraphView` with disposable JS bindings, and the empty state.
+- [x] **T15: Knowledgebase tab.** `KnowledgeBaseTab`, plus the ported `ExplorerPane`, `EditorPane`, `LinksPanel` and dialogs, rewired to `ICurrentStoryKnowledgeBase`. `KnowledgeGraphView` with disposable JS bindings, and the empty state.
   - *Done when:*
     - pages and folders can be created, renamed, moved and deleted
     - links, backlinks and unresolved links show

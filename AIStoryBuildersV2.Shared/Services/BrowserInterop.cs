@@ -9,8 +9,9 @@ namespace AIStoryBuildersV2.Shared.Services;
 /// <summary>Wraps <c>wwwroot/asb.js</c>. Scoped, because MAUI's <see cref="IJSRuntime"/> is scoped to the BlazorWebView.</summary>
 public sealed class BrowserInterop(IJSRuntime js)
 {
-    public ValueTask<bool> WatchWidthAsync<T>(DotNetObjectReference<T> target, int breakpoint) where T : class =>
-        js.InvokeAsync<bool>("asb.watchWidth", target, breakpoint);
+    /// <summary>Watches the window width. The handle has <c>isWide()</c> and <c>dispose()</c>; dispose it with the component.</summary>
+    public ValueTask<IJSObjectReference> WatchWidthAsync<T>(DotNetObjectReference<T> target, int breakpoint) where T : class =>
+        js.InvokeAsync<IJSObjectReference>("asb.watchWidth", target, breakpoint);
 
     public ValueTask RegisterShortcutsAsync<T>(DotNetObjectReference<T>? target) where T : class =>
         js.InvokeVoidAsync("asb.registerShortcuts", target);
@@ -28,8 +29,23 @@ public sealed class BrowserInterop(IJSRuntime js)
 
     public ValueTask ClearValueAsync(string id) => js.InvokeVoidAsync("asb.clearValue", id);
 
-    public ValueTask BindGraphAsync<T>(ElementReference svg, DotNetObjectReference<T> target) where T : class =>
-        js.InvokeVoidAsync("asb.bindGraph", svg, target);
+    /// <summary>Binds zoom, pan and drag to the graph SVG. Call <c>dispose()</c> on the handle to remove its listeners.</summary>
+    public ValueTask<IJSObjectReference> BindGraphAsync<T>(ElementReference svg, DotNetObjectReference<T> target) where T : class =>
+        js.InvokeAsync<IJSObjectReference>("asb.bindGraph", svg, target);
+
+    /// <summary>Calls <c>dispose()</c> on a JS handle and releases it; a page that is going away is ignored.</summary>
+    public static async ValueTask DisposeHandleAsync(IJSObjectReference? handle)
+    {
+        if (handle is null) return;
+        try
+        {
+            await handle.InvokeVoidAsync("dispose");
+            await handle.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+        catch (JSException) { }
+        catch (ObjectDisposedException) { }
+    }
 
     public ValueTask CenterGraphAsync(ElementReference svg, double x, double y) => js.InvokeVoidAsync("asb.centerGraph", svg, x, y);
 

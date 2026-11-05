@@ -28,11 +28,15 @@ window.asb = (function () {
 
         registerShortcuts: function (target) { shortcutTarget = target; },
 
+        // Returns a handle: isWide() and dispose(). The caller disposes it when its component goes away (plan §5.7).
         watchWidth: function (target, breakpoint) {
             const mq = window.matchMedia('(min-width: ' + breakpoint + 'px)');
             const handler = function (ev) { target.invokeMethodAsync('OnWidthChanged', ev.matches); };
             if (mq.addEventListener) mq.addEventListener('change', handler); else mq.addListener(handler);
-            return mq.matches;
+            return {
+                isWide: function () { return mq.matches; },
+                dispose: function () { if (mq.removeEventListener) mq.removeEventListener('change', handler); else mq.removeListener(handler); }
+            };
         },
 
         focus: function (selector) {
@@ -151,12 +155,18 @@ window.asb.bindTreeDrag = function (root, target) {
 // state lives on the element, and a rebuilt layout (a new data-home from .NET) resets the view. A moved node is
 // reported to .NET (OnNodeMoved) so the next render keeps it where it was dropped.
 window.asb.bindGraph = function (svg, target) {
-    if (!svg) return;
+    if (!svg) return null;
     const home = svg.dataset.home || svg.getAttribute('viewBox');
     if (svg.kgbGraph) {
         svg.kgbGraph.target = target;
         if (svg.kgbGraph.home !== home) { svg.kgbGraph.home = home; svg.kgbGraph.view = parse(home); svg.kgbGraph.apply(); }
-        return;
+        return svg.kgbGraph.handle;
+    }
+    // Every listener goes through on(), so dispose() removes them all, including the window ones (plan §5.7).
+    const off = [];
+    function on(el, type, fn, opts) {
+        el.addEventListener(type, fn, opts);
+        off.push(function () { el.removeEventListener(type, fn, opts); });
     }
     function parse(v) { const p = v.split(/\s+/).map(Number); return { x: p[0], y: p[1], w: p[2], h: p[3] }; }
     const state = svg.kgbGraph = { home: home, view: parse(home), drag: null, node: null, moved: false, target: target };
@@ -195,7 +205,7 @@ window.asb.bindGraph = function (svg, target) {
         l.setAttribute('x2', b.x - ux * (rb + 2)); l.setAttribute('y2', b.y - uy * (rb + 2));
     }
 
-    svg.addEventListener('wheel', function (e) {
+    on(svg, 'wheel', function (e) {
         e.preventDefault();
         const p = toGraph(e), v = state.view, home = parse(state.home);
         const factor = Math.exp(Math.sign(e.deltaY) * 0.15);
@@ -205,7 +215,7 @@ window.asb.bindGraph = function (svg, target) {
         apply();
     }, { passive: false });
 
-    svg.addEventListener('pointerdown', function (e) {
+    on(svg, 'pointerdown', function (e) {
         if (e.button !== 0) return;
         const p = toGraph(e);
         state.moved = false;
@@ -223,7 +233,7 @@ window.asb.bindGraph = function (svg, target) {
         }
         state.drag = { x: e.clientX, y: e.clientY, view: Object.assign({}, state.view), s: p.s };
     });
-    window.addEventListener('pointermove', function (e) {
+    on(window, 'pointermove', function (e) {
         const n = state.node;
         if (n) {
             const p = toGraph(e);
@@ -244,7 +254,7 @@ window.asb.bindGraph = function (svg, target) {
         state.view = { x: d.view.x - mx / d.s, y: d.view.y - my / d.s, w: d.view.w, h: d.view.h };
         apply();
     });
-    window.addEventListener('pointerup', function () {
+    on(window, 'pointerup', function () {
         const n = state.node;
         if (n) {
             state.node = null;
@@ -257,7 +267,7 @@ window.asb.bindGraph = function (svg, target) {
         svg.classList.remove('panning');
     });
     // A pan or a move ends with a click on whatever is under the pointer; don't let it select a node.
-    svg.addEventListener('click', function (e) {
+    on(svg, 'click', function (e) {
         if (state.moved) { e.stopPropagation(); e.preventDefault(); state.moved = false; }
     }, true);
 
@@ -271,12 +281,21 @@ window.asb.bindGraph = function (svg, target) {
         });
         svg.querySelectorAll('.kgb-gnode').forEach(function (g) { if (near.has(g.dataset.id)) g.classList.add('hl'); });
     }
-    svg.addEventListener('pointerover', function (e) {
+    on(svg, 'pointerover', function (e) {
         if (state.drag || state.node) return;
         const g = e.target.closest('.kgb-gnode');
         highlight(g ? g.dataset.id : null);
     });
-    svg.addEventListener('pointerleave', function () { if (!state.node) highlight(null); });
+    on(svg, 'pointerleave', function () { if (!state.node) highlight(null); });
+
+    state.handle = {
+        dispose: function () {
+            off.forEach(function (f) { f(); });
+            off.length = 0;
+            if (svg.kgbGraph === state) delete svg.kgbGraph;
+        }
+    };
+    return state.handle;
 };
 window.asb.fitGraph = function (svg) {
     if (!svg || !svg.kgbGraph) return;
