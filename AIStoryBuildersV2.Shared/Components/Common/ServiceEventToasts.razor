@@ -1,0 +1,27 @@
+@* Shows the services' progress messages as Info toasts (UI-Behavior-Spec §0.3, V1 Index.razor:437-461). *@
+@using AIStoryBuildersV2.Shared.AI
+@implements IDisposable
+@inject AIStoryBuildersService Svc
+@inject OrchestratorMethods Orch
+@inject NotificationService Notify
+
+@code {
+    protected override void OnInitialized()
+    {
+        Svc.TextEvent += OnText;
+        Orch.ReadTextEvent += OnReadText;
+    }
+
+    void OnText(object? sender, AIStoryBuildersService.TextEventArgs e) => Show(e.Message, e.DisplayLength);
+
+    void OnReadText(object? sender, OrchestratorMethods.ReadTextEventArgs e) => Show(e.Message, e.DisplayLength);
+
+    void Show(string message, int seconds) =>
+        _ = InvokeAsync(() => Notify.Notify(NotificationSeverity.Info, "", message, seconds * 1000));
+
+    public void Dispose()
+    {
+        Svc.TextEvent -= OnText;
+        Orch.ReadTextEvent -= OnReadText;
+    }
+}

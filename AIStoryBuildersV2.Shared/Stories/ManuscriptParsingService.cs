@@ -355,7 +355,7 @@ public class ManuscriptParsingService
             statusProgress.Report("Assembling story and generating embeddings…");
             _logService.WriteToLog("ManuscriptImport Phase 4: Assembling story…");
 
-            var storyTitle = Path.GetFileNameWithoutExtension(fileName);
+            var storyTitle = AIStoryBuildersService.TitleFromFileName(fileName);
 
             // Build the Story object in AIStoryBuilders format
             var story = new Story

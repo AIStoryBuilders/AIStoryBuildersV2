@@ -9,4 +9,7 @@ public class JSONManifest
     public string Theme { get; set; }
     public string Synopsis { get; set; }
     public string ExportedDate { get; set; }
+
+    /// <summary>Written by V2 (D6); V1 ignores it on import.</summary>
+    public string WorldFacts { get; set; }
 }
