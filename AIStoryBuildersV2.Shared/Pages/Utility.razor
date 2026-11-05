@@ -2,15 +2,31 @@
 @using System.Text
 @inject IFileExportService Export
 @inject NotificationService Notify
+@inject IHostCapabilities Host
+@inject IStoryPersistence Persist
+@inject IStoryLibraryStore Library
+@inject AIStoryBuildersService Svc
 <PageTitle>Utility · AI StoryBuilders</PageTitle>
 
 <h3 class="asb-sec">Utility</h3>
 <p class="asb-sub">Fine-tuning, training data and the JsonL utility.</p>
 
-@* T1: temporary check that IFileExportService works in each host. Removed in T17. *@
-<RadzenButton ButtonStyle="ButtonStyle.Light" Icon="download" Text="Export test file" Click="ExportTestFileAsync" />
+@* T1/T3: temporary developer checks for the host services. Removed in T17. *@
+<div class="asb-panel">
+    <div class="asb-actions" style="margin-bottom:12px">
+        <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="download" Text="Export test file" Click="ExportTestFileAsync" />
+        <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="science" Text="Create sample story" Click="CreateSampleStoryAsync" />
+        <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="refresh" Text="List stories" Click="ListStoriesAsync" />
+    </div>
+    @foreach (var line in _stories)
+    {
+        <div class="asb-note">@line</div>
+    }
+</div>
 
 @code {
+    readonly List<string> _stories = [];
+
     async Task ExportTestFileAsync()
     {
         try
@@ -23,5 +39,51 @@
         {
             Notify.Notify(NotificationSeverity.Error, "Error", ex.Message, 4000);
         }
+    }
+
+    /// <summary>Writes a small V1-format story without AI or embeddings, then saves it through IStoryPersistence.</summary>
+    async Task CreateSampleStoryAsync()
+    {
+        try
+        {
+            var title = "Sample " + DateTime.Now.ToString("HHmmss");
+            var folder = Path.Combine(Host.RootPath, title);
+            Directory.CreateDirectory(Path.Combine(folder, "Characters"));
+            Directory.CreateDirectory(Path.Combine(folder, "Locations"));
+            Directory.CreateDirectory(Path.Combine(folder, "Chapters", "Chapter1"));
+            StoryFormat.WriteAllLines(Path.Combine(folder, "Timelines.csv"), ["Present Day|Now.|" + StoryFormat.FormatTimelineDate(DateTime.Now) + "|"]);
+            StoryFormat.WriteAllLines(Path.Combine(folder, "Characters", "Balt.csv"), ["Appearance||Tall.|" + StoryFormat.NewLine]);
+            StoryFormat.WriteAllText(Path.Combine(folder, "Chapters", "Chapter1", "Chapter1.txt"), "A sample chapter.|");
+            StoryFormat.WriteAllText(Path.Combine(folder, "Chapters", "Chapter1", "Paragraph1.txt"), "|Present Day|[Balt]|Balt waited.|");
+            await Library.UpsertAsync(new StoryIndexEntry("0", title, "Drama", "", "A sample story.", "", null));
+            Persist.MarkDirty(title);
+            await Persist.FlushAsync(title);
+            Notify.Notify(NotificationSeverity.Success, "Saved", title, 4000);
+            await ListStoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            Notify.Notify(NotificationSeverity.Error, "Error", ex.Message, 8000);
+        }
+    }
+
+    async Task ListStoriesAsync()
+    {
+        _stories.Clear();
+        foreach (var story in await Svc.GetStorysAsync())
+        {
+            try
+            {
+                await Persist.OpenAsync(story.Title);
+                var chapters = Svc.GetChapters(story);
+                var paragraphs = chapters.Sum(c => Svc.GetParagraphs(c).Count);
+                _stories.Add($"{story.Title}: {chapters.Count} chapter(s), {paragraphs} paragraph(s)");
+            }
+            catch (Exception ex)
+            {
+                _stories.Add($"{story.Title}: {ex.Message}");
+            }
+        }
+        if (_stories.Count == 0) _stories.Add("No stories.");
     }
 }

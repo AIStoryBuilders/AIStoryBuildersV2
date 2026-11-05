@@ -23,11 +23,14 @@ builder.Services.AddSingleton(_ => new HttpClient());
 builder.Services.AddSingleton<IHostCapabilities>(new BrowserHostCapabilities(root));
 builder.Services.AddScoped<IFileExportService, BrowserFileExportService>();
 builder.Services.AddSingleton<IKeyValueStore, LocalStorageKeyValueStore>();
-builder.Services.AddSingleton<IStoryPersistence, ZipStoryPersistence>();
+builder.Services.AddSingleton<ZipStoryPersistence>();
+builder.Services.AddSingleton<IStoryPersistence>(sp => sp.GetRequiredService<ZipStoryPersistence>());
+builder.Services.AddSingleton<StorageEventBridge>();
 builder.Services.AddSingleton<IStoryLibraryStore, LocalStorageStoryLibraryStore>();
 builder.Services.AddSingleton<IAppDataStore, LocalStorageAppDataStore>();
 builder.Services.AddAIStoryBuildersV2Shared();
 
 var host = builder.Build();
 await host.Services.GetRequiredService<LogService>().InitializeAsync();
+await host.Services.GetRequiredService<StorageEventBridge>().StartAsync();
 await host.RunAsync();

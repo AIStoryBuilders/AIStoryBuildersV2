@@ -1112,7 +1112,7 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
   - *Done when:* the golden tests for the rename-timeline and rename-character operations pass, the culture test passes, and `MarkDirtyCoverageTests` passes for these methods.
 - [ ] **T2d: Story, chapter and paragraph mutations and restructure**: `AddStory` file writes, `UpdateStoryAsync`, `DeleteStoryAsync`, chapter and paragraph CRUD, `RestructureChapters` and `RestructureParagraphs`.
   - *Done when:* the add-paragraph and delete-chapter golden tests pass, and `MarkDirtyCoverageTests` passes for these methods.
-- [ ] **T3: WASM persistence.** The full `ZipStoryPersistence`, the quota mapping, `StorageEventBridge`, `LocalStorageKeyValueStore` and the usage meter on `/settings`.
+- [x] **T3: WASM persistence.** The full `ZipStoryPersistence`, the quota mapping, `StorageEventBridge`, `LocalStorageKeyValueStore` and the usage meter on `/settings`.
   - *Done when:* the `ZipStoryPersistence` tests pass. In the browser, a temporary dev button on `/utility` creates a fixture story, the `asb2:*` keys show in DevTools, and the story survives a reload.
 - [ ] **T4: Embeddings.** The `Embeddings.Onnx` library with V1's `LocalEmbeddingGenerator` and the reference-vector test. WASM `BrowserEmbeddingGenerator` with vendored onnxruntime-web, base-relative URLs, and the DEBUG self-test button.
   - *Done when:* the self-test reports cosine ≥ 0.98 for all 5 sentences, and DevTools shows no request to any CDN, including under a non-root `<base href>`.

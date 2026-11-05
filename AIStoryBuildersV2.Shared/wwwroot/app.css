@@ -112,3 +112,10 @@ h3.asb-sec { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin:
   .asb-menu.rz-menu { order: 3; width: 100%; overflow-x: auto; }
   .asb-page { padding: 20px 14px 60px; }
 }
+
+/* ---------- panels ---------- */
+.asb-panel { background: var(--asb-panel); border: 1px solid var(--asb-line); border-radius: 14px; padding: 20px 22px;
+  max-width: 620px; box-shadow: 0 1px 2px rgba(20,18,30,.04); margin-bottom: 16px; }
+.asb-usage-label { font-size: 13px; color: var(--asb-ink); margin-bottom: 8px; }
+.asb-mt { margin-top: 12px; }
+.asb-note { font-size: 11.5px; color: var(--asb-muted); }
