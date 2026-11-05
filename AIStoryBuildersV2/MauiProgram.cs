@@ -1,6 +1,7 @@
 using AIStoryBuildersV2.Embeddings.Onnx;
 using AIStoryBuildersV2.Services;
 using AIStoryBuildersV2.Shared.Hosting;
+using AIStoryBuildersV2.Shared.Knowledge;
 using AIStoryBuildersV2.Shared.Settings;
 using AIStoryBuildersV2.Shared.Stories;
 using AIStoryBuildersV2.Shared.Stories.Storage;
@@ -40,6 +41,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAppDataStore>(new FileAppDataStore(root));
         builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>>(new LocalEmbeddingGenerator());
         builder.Services.AddSingleton<ISettingsStore, MauiSettingsStore>();
+        builder.Services.AddSingleton<IFileDeleter, RecycleBinFileDeleter>();
         builder.Services.AddAIStoryBuildersV2Shared();
 
 #if DEBUG

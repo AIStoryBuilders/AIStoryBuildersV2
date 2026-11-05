@@ -16,6 +16,8 @@
 @inject IFileExportService Export
 @inject LogService Log
 @inject IStoryChatService ChatService
+@inject IStoryKnowledgeBaseProvider KbProvider
+@inject ICurrentStoryKnowledgeBase CurKb
 <PageTitle>@Title · AI StoryBuilders</PageTitle>
 <ServiceEventToasts />
 
@@ -126,6 +128,7 @@ else
     bool elsewhereBanner;
     bool deleted;
     readonly List<ChatBubble> chatBubbles = [];
+    bool kbOpen;
     IDisposable? navigationLock;
 
     string SaveIcon => saveState switch { SaveState.Saving => "sync", SaveState.Unsaved => "edit", SaveState.Failed => "error", _ => "check_circle" };
@@ -155,6 +158,8 @@ else
                 return;
             }
             await Persist.OpenAsync(match.Title);
+            CurKb.Current = await KbProvider.OpenAsync(match.Title);
+            kbOpen = true;
             story = match;
             Poll();
         }
@@ -243,6 +248,10 @@ else
         elsewhereBanner = false;
         await Persist.ReloadAsync(story.Title);
         Svc.MarkGraphDirty(story.Title);
+        // The KB files were replaced too: reopen it so its graph and ticks match the reloaded pages.
+        await CloseKbAsync();
+        CurKb.Current = await KbProvider.OpenAsync(story.Title);
+        kbOpen = true;
         var current = tab;
         Nav.NavigateTo(StoryTitle.WorkspaceHref(story.Title, current), forceLoad: false, replace: true);
         story = (await Svc.GetStorysAsync()).FirstOrDefault(s => StoryTitle.SameTitle(s.Title, Title));
@@ -272,6 +281,7 @@ else
         if (deleted)
         {
             ChatService.ClearSession(story.Title);
+            await CloseKbAsync();
             return;
         }
         var target = Nav.ToBaseRelativePath(context.TargetLocation);
@@ -293,12 +303,22 @@ else
             }
         }
         ChatService.ClearSession(story.Title);
+        await CloseKbAsync();
     }
 
-    public ValueTask DisposeAsync()
+    /// <summary>Plan §5.7: clear the accessor, then dispose the story's KB (a no-op when it is already closed).</summary>
+    async Task CloseKbAsync()
+    {
+        if (story is null || !kbOpen) return;
+        kbOpen = false;
+        CurKb.Current = null;
+        await KbProvider.CloseAsync(story.Title);
+    }
+
+    public async ValueTask DisposeAsync()
     {
         Persist.Changed -= OnPersistenceChanged;
         navigationLock?.Dispose();
-        return ValueTask.CompletedTask;
+        await CloseKbAsync();
     }
 }

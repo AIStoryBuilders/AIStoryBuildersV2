@@ -49,6 +49,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ManuscriptParsingService>();
         services.AddSingleton<ParagraphAiHelper>();
         services.AddSingleton<StoryChat.IStoryChatService, StoryChat.StoryChatService>();
+
+        // Per-story knowledge bases (D12, D13). MAUI replaces the deleter with the Recycle Bin one.
+        services.TryAddSingleton<Knowledge.IFileDeleter, Knowledge.PermanentFileDeleter>();
+        services.AddSingleton<Knowledge.IStoryKnowledgeBaseProvider, Knowledge.StoryKnowledgeBaseProvider>();
+        services.AddScoped<Knowledge.ICurrentStoryKnowledgeBase, Knowledge.CurrentStoryKnowledgeBase>();
         return services;
     }
 }

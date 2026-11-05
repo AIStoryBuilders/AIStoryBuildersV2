@@ -115,6 +115,15 @@ public static class SafeMarkdown
                 return;
             }
 
+            // KGB-style page links (./?p=Page.md) keep working, pointed at this story's KB.
+            if (url.StartsWith("./?p=", StringComparison.Ordinal) || url.StartsWith("?p=", StringComparison.Ordinal))
+            {
+                var page = Uri.UnescapeDataString(url[(url.IndexOf("?p=", StringComparison.Ordinal) + 3)..].Split('&')[0]);
+                if (o.Links is null) r.Write(E(label));
+                else r.Write("<a class=\"wl\" href=\"").Write(E(o.Links.PageHref(page))).Write("\">").Write(E(label)).Write("</a>");
+                return;
+            }
+
             var resolved = o.ResolveRelative?.Invoke(url);
             if (resolved is not null && o.Links is not null)
                 r.Write("<a class=\"wl\" href=\"").Write(E(o.Links.PageHref(resolved))).Write("\">").Write(E(label)).Write("</a>");

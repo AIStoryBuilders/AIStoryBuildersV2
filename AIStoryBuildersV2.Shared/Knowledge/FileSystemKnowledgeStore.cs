@@ -20,7 +20,7 @@ public sealed class FileSystemKnowledgeStore : IKnowledgeStore
         _root = Path.GetFullPath(options.RootPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         _maxPageBytes = options.MaxPageBytes;
         _deleter = deleter;
-        Directory.CreateDirectory(_root);
+        // The root is created by the first write, so V1-format stories without a KB stay unchanged (plan §5.7).
     }
 
     public string RootPath => _root;
@@ -35,6 +35,7 @@ public sealed class FileSystemKnowledgeStore : IKnowledgeStore
     {
         var folder = KnowledgePath.Parse(folderPath, isPage: false);
         var full = ToFull(folder);
+        if (folder.IsRoot && !Directory.Exists(full)) return Task.FromResult<IReadOnlyList<KnowledgeNode>>([]);
         if (!Directory.Exists(full)) throw new KnowledgeNotFoundException(folder.Value);
 
         var dir = new DirectoryInfo(full);
@@ -230,6 +231,7 @@ public sealed class FileSystemKnowledgeStore : IKnowledgeStore
     public int RecoverInterruptedRenames()
     {
         var recovered = 0;
+        if (!Directory.Exists(_root)) return 0;
         foreach (var sidecar in Directory.EnumerateFiles(_root, KnowledgePath.TempPrefix + "*" + RestoreSuffix, SearchOption.AllDirectories))
         {
             var temp = sidecar[..^RestoreSuffix.Length];
@@ -266,6 +268,7 @@ public sealed class FileSystemKnowledgeStore : IKnowledgeStore
     {
         var (target, isPage) = ResolveExisting(folderPath);
         if (isPage) return Task.FromResult(new FolderStats(1, 0, 0));
+        if (!Directory.Exists(ToFull(target))) return Task.FromResult(new FolderStats(0, 0, 0));
 
         int pages = 0, folders = 0, other = 0;
         foreach (var entry in new DirectoryInfo(ToFull(target)).EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
@@ -280,7 +283,7 @@ public sealed class FileSystemKnowledgeStore : IKnowledgeStore
     public Task<IReadOnlyList<string>> GetAllPagePathsAsync(CancellationToken ct = default)
     {
         var result = new List<string>();
-        Walk(new DirectoryInfo(_root), KnowledgePath.Root, result, null);
+        if (Directory.Exists(_root)) Walk(new DirectoryInfo(_root), KnowledgePath.Root, result, null);
         return Task.FromResult<IReadOnlyList<string>>(result);
     }
 
@@ -288,7 +291,7 @@ public sealed class FileSystemKnowledgeStore : IKnowledgeStore
     public IReadOnlyList<string> GetAllFolderPaths()
     {
         var folders = new List<string>();
-        Walk(new DirectoryInfo(_root), KnowledgePath.Root, new List<string>(), folders);
+        if (Directory.Exists(_root)) Walk(new DirectoryInfo(_root), KnowledgePath.Root, new List<string>(), folders);
         return folders;
     }
 

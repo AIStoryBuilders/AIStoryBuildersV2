@@ -26,4 +26,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- KGB's seed pages, used only by the ported KB tests (V2 never seeds a story's KB). -->
+    <EmbeddedResource Include="Knowledge\Seed\**\*.md" LogicalName="Seed/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>

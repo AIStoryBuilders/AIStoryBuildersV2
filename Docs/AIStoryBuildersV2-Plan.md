@@ -1148,7 +1148,7 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
   - *Done when:* Autodetect adds the detected attributes after confirmation, and the result of the WebView2 speech check is recorded (R9).
 - [ ] **T13: Story Chat.** Port `StoryChatService` on the shared client with `StoryGraphContext` per turn. Add `StoryChatTab` with streaming, Clear and Retry.
   - *Done when:* "Who does Balt interact with in chapter 2?" answers from graph tools in both apps, and a graph mutation asks for confirmation as V1 does.
-- [ ] **T14: Per-story KB core.** Port KGB `Knowledge/` and `Markdown/` (D12), plus `StoryKnowledgeBaseProvider`, `TickTrackingKnowledgeStore`, `CurrentStoryKnowledgeBase` and `KbLinkBuilder`. Wire the persistence hook.
+- [x] **T14: Per-story KB core.** Port KGB `Knowledge/` and `Markdown/` (D12), plus `StoryKnowledgeBaseProvider`, `TickTrackingKnowledgeStore`, `CurrentStoryKnowledgeBase` and `KbLinkBuilder`. Wire the persistence hook.
   - *Done when:* the ported KGB tests, the provider isolation tests and the ticks tests pass, and a test round-trips a story with KB pages through `.stybld`.
 - [ ] **T15: Knowledgebase tab.** `KnowledgeBaseTab`, plus the ported `ExplorerPane`, `EditorPane`, `LinksPanel` and dialogs, rewired to `ICurrentStoryKnowledgeBase`. `KnowledgeGraphView` with disposable JS bindings, and the empty state.
   - *Done when:*
