@@ -54,6 +54,10 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Knowledge.IFileDeleter, Knowledge.PermanentFileDeleter>();
         services.AddSingleton<Knowledge.IStoryKnowledgeBaseProvider, Knowledge.StoryKnowledgeBaseProvider>();
         services.AddScoped<Knowledge.ICurrentStoryKnowledgeBase, Knowledge.CurrentStoryKnowledgeBase>();
+
+        // "Search knowledgebase" (D14-D16).
+        services.AddSingleton<KnowledgeAssist.KnowledgeSearchChoice>();
+        services.AddSingleton<KnowledgeAssist.IKnowledgeContextRetriever, KnowledgeAssist.KnowledgeContextRetriever>();
         return services;
     }
 }

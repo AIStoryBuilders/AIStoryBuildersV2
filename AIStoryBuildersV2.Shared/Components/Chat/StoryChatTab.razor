@@ -1,11 +1,14 @@
 @* Chat tab (UI-Behavior-Spec §16; V1 ChatControl.razor). *@
 @using AIStoryBuildersV2.Shared.Knowledge
 @using AIStoryBuildersV2.Shared.StoryChat
+@using AIStoryBuildersV2.Shared.KnowledgeAssist
 @implements IDisposable
 @inject IStoryChatService Chat
 @inject AIStoryBuildersService Svc
 @inject BrowserInterop Js
 @inject LogService Log
+@inject KnowledgeSearchChoice Choice
+@inject ICurrentStoryKnowledgeBase CurKb
 
 <div class="asb-chat">
     <div class="asb-chat-head">
@@ -79,13 +82,11 @@
     /// <summary>Owned by StoryWorkspace so the conversation survives tab switches.</summary>
     [Parameter, EditorRequired] public List<ChatBubble> Bubbles { get; set; } = default!;
 
-    /// <summary>The story's KB links for [[path]] citations (T15); null renders citations as text.</summary>
-    [Parameter] public KbLinkBuilder? Links { get; set; }
-    [Parameter] public Func<string, string?>? Resolve { get; set; }
+    /// <summary>[[path]] citations link to the story's KB page (D13), or render as text when no KB is open.</summary>
+    KbLinkBuilder? Links => CurKb.Current?.Links;
 
-    /// <summary>D16: whether the story's KB is empty and the remembered/default checkbox value (T16).</summary>
-    [Parameter] public Func<Task<(bool Empty, bool Checked)>>? KnowledgeBaseDefault { get; set; }
-    [Parameter] public EventCallback<bool> KnowledgeBaseChoiceChanged { get; set; }
+    string? Resolve(string target) =>
+        CurKb.Current is { } kb ? LinkResolver.ResolveWiki(kb.Graph.Snapshot.Directory, "", target)?.Path : null;
 
     string? model;
     string input = "";
@@ -101,7 +102,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (KnowledgeBaseDefault is not null) (kbEmpty, searchKb) = await KnowledgeBaseDefault();
+        (kbEmpty, searchKb) = await Choice.DefaultAsync(Story.Title, KnowledgeSearchChoice.Chat);
+        // Build the KB graph now so citations in answers resolve.
+        if (CurKb.Current is { } kb && !kbEmpty)
+        {
+            try { await kb.Graph.GetStatsAsync(); }
+            catch (KnowledgeException) { }
+        }
         try
         {
             await Svc.EnsureGraphExistsAsync(Story.Title);
@@ -138,10 +145,10 @@
     [JSInvokable]
     public void OnComposerEscape() { }
 
-    async Task OnSearchKbChanged(bool value)
+    void OnSearchKbChanged(bool value)
     {
         searchKb = value;
-        await KnowledgeBaseChoiceChanged.InvokeAsync(value);
+        Choice.Remember(Story.Title, KnowledgeSearchChoice.Chat, value);
     }
 
     async Task SendAsync()
