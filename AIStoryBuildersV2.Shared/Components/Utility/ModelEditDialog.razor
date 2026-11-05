@@ -1,0 +1,48 @@
+@* Edit Model Name (V1 ModelEdit.razor, UI-Behavior-Spec §8.4). *@
+@using AIStoryBuildersV2.Shared.AI
+@inject DialogService Dialogs
+@inject NotificationService Notify
+@inject OrchestratorMethods Orchestrator
+@inject LogService Log
+
+<div class="asb-field">
+    <label for="me-name">Model Name:</label>
+    <RadzenTextBox id="me-name" MaxLength="50" @bind-Value="name" Style="width:100%" />
+</div>
+<div class="asb-dialog-actions">
+    <RadzenButton Text="Save" Icon="save" ButtonStyle="ButtonStyle.Success" Disabled="busy" Click="SaveAsync" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AIStoryBuilderModel Model { get; set; } = default!;
+
+    string name = "";
+    bool busy;
+
+    protected override void OnInitialized() => name = Model.ModelName ?? "";
+
+    async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            Notify.Notify(NotificationSeverity.Error, "Error", "Model Name is required", 4000);
+            return;
+        }
+        busy = true;
+        try
+        {
+            Model.ModelName = name.Trim();
+            await Orchestrator.UpdateModelNameAsync(Model);
+            Dialogs.Close(true);
+        }
+        catch (Exception ex)
+        {
+            Notify.Notify(NotificationSeverity.Error, "Error", ex.Message, 4000);
+            Log.WriteToLog(ex.Message);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

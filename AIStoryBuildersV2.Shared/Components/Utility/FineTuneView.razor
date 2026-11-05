@@ -1,0 +1,64 @@
+@* V1 FineTuneView: the training rows on the left, the selected row's Assistant and User text on the right (UI-Behavior-Spec §8.2). *@
+
+<div class="asb-ft">
+    <div class="asb-ft-list" role="listbox" aria-label="Training data">
+        @foreach (var row in Rows)
+        {
+            <button type="button" role="option" aria-selected="@(ReferenceEquals(row, selected) ? "true" : "false")"
+                    class="asb-ft-row @(ReferenceEquals(row, selected) ? "sel" : "")" @onclick="@(() => Select(row))">@TrimText(row.Assistant, 100)</button>
+        }
+    </div>
+    <div class="asb-ft-detail">
+        @if (selected is not null)
+        {
+            <RadzenTabs RenderMode="TabRenderMode.Client">
+                <Tabs>
+                    <RadzenTabsItem Text="(Training Data)">
+                        <label class="asb-field-label" for="ft-assistant">Assistant:</label>
+                        <RadzenTextArea id="ft-assistant" Rows="10" @bind-Value="selected.Assistant" Style="width:100%" />
+                    </RadzenTabsItem>
+                    <RadzenTabsItem Text="(Instruction)">
+                        <label class="asb-field-label" for="ft-user">User:</label>
+                        <RadzenTextArea id="ft-user" Rows="10" @bind-Value="selected.User" Style="width:100%" />
+                    </RadzenTabsItem>
+                </Tabs>
+            </RadzenTabs>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public List<TrainingData> Rows { get; set; } = [];
+
+    TrainingData? selected;
+
+    protected override void OnParametersSet()
+    {
+        if (selected is null || !Rows.Contains(selected))
+        {
+            selected = Rows.FirstOrDefault();
+            if (selected is not null) Clean(selected);
+        }
+    }
+
+    void Select(TrainingData row)
+    {
+        selected = row;
+        Clean(row);
+    }
+
+    static void Clean(TrainingData row)
+    {
+        row.Assistant = CleanText(row.Assistant);
+        row.User = CleanText(row.User);
+    }
+
+    /// <summary>V1: remove HTML tags and &amp;nbsp;.</summary>
+    static string CleanText(string? text) => Regex.Replace(text ?? "", "<.*?>", string.Empty).Replace("&nbsp;", string.Empty);
+
+    static string TrimText(string? text, int length)
+    {
+        var clean = CleanText(text);
+        return clean.Length > length ? clean[..length] + "..." : clean;
+    }
+}
