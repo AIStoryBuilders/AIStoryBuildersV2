@@ -1,9 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <TargetFrameworks>net10.0-android</TargetFrameworks>
-        <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+        <!-- Only Windows is a supported target (plan §2). The mobile TFMs build only with
+             -p:IncludeMobileTargets=true, so restore does not need the mobile workloads (plan §6.6, R5). -->
+        <IncludeMobileTargets Condition="'$(IncludeMobileTargets)' == ''">false</IncludeMobileTargets>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net11.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks Condition="'$(IncludeMobileTargets)' == 'true'">$(TargetFrameworks);net11.0-android</TargetFrameworks>
+        <TargetFrameworks Condition="'$(IncludeMobileTargets)' == 'true' And !$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net11.0-ios;net11.0-maccatalyst</TargetFrameworks>
 
         <!-- Note for MacCatalyst:
             The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
@@ -69,7 +72,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.14" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="11.0.0-rc.3.26522.148" />
     </ItemGroup>
 
     <ItemGroup>

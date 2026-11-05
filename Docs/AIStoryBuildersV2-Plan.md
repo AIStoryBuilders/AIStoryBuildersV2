@@ -1100,7 +1100,7 @@ dotnet test AIStoryBuildersV2.Tests/AIStoryBuildersV2.Tests.csproj
 
 Every *done when* below can be checked with what earlier tasks have built. UI checks come only after the UI exists.
 
-- [ ] **T0: Retarget to .NET 11.** Update `global.json`, every TFM (with `IncludeMobileTargets`) and the package versions (§6.6). Update the workloads (§6.6, R5). Update `copilot-instructions.md`, the README and layout text that say ".NET 10".
+- [x] **T0: Retarget to .NET 11.** Update `global.json`, every TFM (with `IncludeMobileTargets`) and the package versions (§6.6). Update the workloads (§6.6, R5). Update `copilot-instructions.md`, the README and layout text that say ".NET 10".
   - *Done when:* the three commands above pass, `aspire run` lists `aistorybuildersv2-windows` and `web`, `web` starts and the Windows app starts from the dashboard (or R2 is applied and noted), and the workload versions are recorded in the PR.
 - [ ] **T1: Host contracts and shells.** §6.1 and §6.2 contracts. Host implementations of `IHostCapabilities` and `IFileExportService`. `DiskStoryPersistence` and a no-op `ZipStoryPersistence` stub. `asb.js` with `saveAsFile`. MainLayout with the menu, and empty `/`, `/logs`, `/utility`, `/settings` and `/story/{title}` pages.
   - *Done when:* both apps show the menu and navigate between the pages, and a temporary button on `/utility` exports a text file in each app.
