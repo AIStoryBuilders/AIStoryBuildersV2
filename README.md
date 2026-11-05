@@ -94,6 +94,19 @@ Serve `publish/wwwroot` from any static file server. The server must:
 
 No file is loaded from a CDN: the ONNX runtime, the model and the fonts are in the publish output.
 
+## Third-party licenses
+
+Most packages are MIT, Apache-2.0 or BSD. Two are not, and both allow only non-commercial use:
+
+| Package | Used for | License |
+|---------|----------|---------|
+| [Xceed DocX](https://github.com/xceedsoftware/DocX) 5.0.0 | Word export and `.docx` manuscript import | Xceed Community License: non-commercial use, fewer than 10 users, and the Xceed copyright notice must be shown |
+| [EPPlus](https://epplussoftware.com) 8.5.3 | Training-data Excel export | Polyform Noncommercial 1.0.0 (set in code with `ExcelPackage.License.SetNonCommercialOrganization`) |
+
+Copyright © Xceed Software Inc. (DocX). Commercial use of AI StoryBuilders V2 needs commercial licenses for
+both libraries. Others: Radzen.Blazor, Markdig, YamlDotNet, ExcelDataReader, Newtonsoft.Json and
+Blazored.LocalStorage (MIT); PdfPig and onnxruntime-web (Apache-2.0 / MIT); Microsoft.ML.OnnxRuntime (MIT).
+
 ## The UI is specified in `Docs/Design`
 
 The screens are specified in [`Docs/Design/DESIGN.md`](Docs/Design/DESIGN.md) and the interactive

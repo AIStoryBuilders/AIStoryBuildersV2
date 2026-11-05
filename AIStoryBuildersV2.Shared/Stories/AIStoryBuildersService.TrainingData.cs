@@ -126,7 +126,7 @@ static class ExcelLicense
 {
     static readonly Lazy<bool> License = new(() =>
     {
-        // EPPlus 8 throws unless a license choice is set before use; the app is non-commercial.
+        // EPPlus 8 needs a license choice before use. V1 used EPPlus under its non-commercial terms (see README).
         ExcelPackage.License.SetNonCommercialOrganization("AIStoryBuilders");
         return true;
     });
