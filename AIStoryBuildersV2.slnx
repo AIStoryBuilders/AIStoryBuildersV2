@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="AIStoryBuildersV2.AppHost/AIStoryBuildersV2.AppHost.csproj" />
+  <Project Path="AIStoryBuildersV2.Embeddings.Onnx/AIStoryBuildersV2.Embeddings.Onnx.csproj" />
   <Project Path="AIStoryBuildersV2.ServiceDefaults/AIStoryBuildersV2.ServiceDefaults.csproj" />
   <Project Path="AIStoryBuildersV2.Shared/AIStoryBuildersV2.Shared.csproj" />
   <Project Path="AIStoryBuildersV2.Tests/AIStoryBuildersV2.Tests.csproj" />

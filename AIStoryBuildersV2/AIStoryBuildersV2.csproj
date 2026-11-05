@@ -78,6 +78,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\AIStoryBuildersV2.Shared\AIStoryBuildersV2.Shared.csproj" />
+        <ProjectReference Include="..\AIStoryBuildersV2.Embeddings.Onnx\AIStoryBuildersV2.Embeddings.Onnx.csproj" />
     </ItemGroup>
 
 </Project>

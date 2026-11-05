@@ -1,8 +1,10 @@
+using AIStoryBuildersV2.Embeddings.Onnx;
 using AIStoryBuildersV2.Services;
 using AIStoryBuildersV2.Shared.Hosting;
 using AIStoryBuildersV2.Shared.Stories;
 using AIStoryBuildersV2.Shared.Stories.Storage;
 using CommunityToolkit.Maui;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
 namespace AIStoryBuildersV2;
@@ -35,6 +37,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IStoryPersistence, DiskStoryPersistence>();
         builder.Services.AddSingleton<IStoryLibraryStore>(new CsvStoryLibraryStore(root));
         builder.Services.AddSingleton<IAppDataStore>(new FileAppDataStore(root));
+        builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>>(new LocalEmbeddingGenerator());
         builder.Services.AddAIStoryBuildersV2Shared();
 
 #if DEBUG

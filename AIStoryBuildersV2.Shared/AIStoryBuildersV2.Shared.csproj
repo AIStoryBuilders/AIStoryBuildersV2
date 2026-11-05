@@ -42,6 +42,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- V1's JsonL template (Utility, plan §5.2). -->
+    <EmbeddedResource Include="FineTunedTemplate.xls" LogicalName="FineTunedTemplate.xls" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <!-- Reference vectors for the DEBUG embedding self-test (plan §10); made by the Tests project. -->
+    <EmbeddedResource Include="..\AIStoryBuildersV2.Tests\Fixtures\embeddings.json" LogicalName="embeddings.json" Condition="Exists('..\AIStoryBuildersV2.Tests\Fixtures\embeddings.json')" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="AIStoryBuildersV2.Tests" />
   </ItemGroup>
 

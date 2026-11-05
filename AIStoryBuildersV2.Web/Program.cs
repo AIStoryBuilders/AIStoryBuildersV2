@@ -6,6 +6,7 @@ using AIStoryBuildersV2.Shared.Stories.Storage;
 using AIStoryBuildersV2.Web.Services;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.AI;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -28,6 +29,7 @@ builder.Services.AddSingleton<IStoryPersistence>(sp => sp.GetRequiredService<Zip
 builder.Services.AddSingleton<StorageEventBridge>();
 builder.Services.AddSingleton<IStoryLibraryStore, LocalStorageStoryLibraryStore>();
 builder.Services.AddSingleton<IAppDataStore, LocalStorageAppDataStore>();
+builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>, BrowserEmbeddingGenerator>();
 builder.Services.AddAIStoryBuildersV2Shared();
 
 var host = builder.Build();

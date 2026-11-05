@@ -5,3 +5,15 @@
 <p class="asb-sub">Connect an AI provider. Embeddings run locally — no cloud embedding calls needed.</p>
 
 <StorageUsagePanel />
+@if (IsDebug)
+{
+    <EmbeddingSelfTestPanel />
+}
+
+@code {
+#if DEBUG
+    const bool IsDebug = true;
+#else
+    const bool IsDebug = false;
+#endif
+}
