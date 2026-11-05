@@ -347,7 +347,7 @@
         if (all.Count > 0)
         {
             var picked = await Dialogs.OpenAsync<CharacterAttributesDialog>("Select Character Attributes",
-                new Dictionary<string, object> { ["Items"] = all }, new DialogOptions { Width = "500px", Height = "360px", ShowClose = true });
+                new Dictionary<string, object?> { ["Items"] = all }, new DialogOptions { Width = "500px", Height = "360px", ShowClose = true });
             if (picked is List<SimpleCharacterSelector> selected)
             {
                 foreach (var parts in selected.Select(s => s.CharacterValue.Split('|')).Where(p => p.Length >= 4))

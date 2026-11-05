@@ -46,7 +46,7 @@
         try
         {
             await Dialogs.OpenAsync<LocationDialog>(existing is null ? "New Location" : "Edit Location",
-                new Dictionary<string, object> { ["Location"] = location },
+                new Dictionary<string, object?> { ["Location"] = location },
                 new DialogOptions { Width = "650px", CloseDialogOnEsc = true, ShowClose = true });
             Load();
         }

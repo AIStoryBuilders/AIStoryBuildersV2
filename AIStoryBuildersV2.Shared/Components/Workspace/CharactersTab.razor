@@ -47,7 +47,7 @@
         try
         {
             await Dialogs.OpenAsync<CharacterDialog>(existing is null ? "New Character" : "Edit Character",
-                new Dictionary<string, object> { ["Character"] = character, ["Existing"] = characters },
+                new Dictionary<string, object?> { ["Character"] = character, ["Existing"] = characters },
                 new DialogOptions { Width = "650px", CloseDialogOnEsc = true, ShowClose = true });
             Load();
         }

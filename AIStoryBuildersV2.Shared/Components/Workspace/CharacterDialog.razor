@@ -68,7 +68,7 @@ else
             : new CharacterBackground { Id = existing.Id, Type = existing.Type, Description = existing.Description, Timeline = existing.Timeline };
         var title = existing is null ? $"New Character Background - {background.Type}" : $"Edit Character Background  - {background.Type}";
         var result = await Dialogs.OpenAsync<CharacterBackgroundDialog>(title,
-            new Dictionary<string, object> { ["Background"] = background, ["Story"] = Character.Story },
+            new Dictionary<string, object?> { ["Background"] = background, ["Story"] = Character.Story },
             new DialogOptions { Width = "500px", CloseDialogOnEsc = true, ShowClose = true });
         if (result is not CharacterBackground edited) return;
 

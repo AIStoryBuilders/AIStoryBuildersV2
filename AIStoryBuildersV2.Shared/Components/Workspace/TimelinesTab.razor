@@ -45,7 +45,7 @@
         try
         {
             await Dialogs.OpenAsync<TimelineDialog>(existing is null ? "New Timeline" : "Edit Timeline",
-                new Dictionary<string, object> { ["Timeline"] = timeline, ["Existing"] = timelines },
+                new Dictionary<string, object?> { ["Timeline"] = timeline, ["Existing"] = timelines },
                 new DialogOptions { Width = "650px", CloseDialogOnEsc = true, ShowClose = true });
             Load();
         }

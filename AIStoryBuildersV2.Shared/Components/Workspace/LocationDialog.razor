@@ -63,7 +63,7 @@ else
             ? new LocationDescription { Id = -1, Description = "", Timeline = new Timeline { TimelineName = "" } }
             : new LocationDescription { Id = existing.Id, Description = existing.Description, Timeline = existing.Timeline };
         var result = await Dialogs.OpenAsync<LocationDescriptionDialog>(existing is null ? "New Location Description" : "Edit Location Description",
-            new Dictionary<string, object> { ["Description"] = description, ["Story"] = Location.Story },
+            new Dictionary<string, object?> { ["Description"] = description, ["Story"] = Location.Story },
             new DialogOptions { Width = "650px", CloseDialogOnEsc = true, ShowClose = true });
         if (result is not LocationDescription edited) return;
 

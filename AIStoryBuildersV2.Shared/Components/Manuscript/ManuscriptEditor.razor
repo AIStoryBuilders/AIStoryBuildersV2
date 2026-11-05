@@ -203,7 +203,7 @@
     {
         var number = chapters.Count + 1;
         var chapter = new Chapter { ChapterName = $"Chapter {number}", Sequence = number, Synopsis = "", Story = Story };
-        var result = await Dialogs.OpenAsync<NewChapterDialog>($"Chapter {number}", new Dictionary<string, object> { ["Chapter"] = chapter },
+        var result = await Dialogs.OpenAsync<NewChapterDialog>($"Chapter {number}", new Dictionary<string, object?> { ["Chapter"] = chapter },
             new DialogOptions { Width = "650px", CloseDialogOnEsc = true, ShowClose = true });
         if (result is not Chapter created) return;
         busy = true;
@@ -287,7 +287,7 @@
         if (selected is null) return;
         selected.Story = Story;
         var result = await Dialogs.OpenAsync<ParagraphEditorDialog>(paragraph.Id == -1 ? "New Section" : $"Section {paragraph.Sequence}",
-            new Dictionary<string, object> { ["Chapter"] = selected, ["Paragraph"] = paragraph, ["Story"] = Story },
+            new Dictionary<string, object?> { ["Chapter"] = selected, ["Paragraph"] = paragraph, ["Story"] = Story },
             new DialogOptions { Width = "760px", CloseDialogOnEsc = false, ShowClose = false, ShowTitle = false });
         if (result is ParagraphEditorDialog.Outcome outcome)
         {

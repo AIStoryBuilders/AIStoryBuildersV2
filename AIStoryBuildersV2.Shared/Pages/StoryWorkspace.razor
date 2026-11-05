@@ -2,6 +2,8 @@
 @layout WorkspaceLayout
 @using AIStoryBuildersV2.Shared.Components.Workspace
 @using AIStoryBuildersV2.Shared.Components.Manuscript
+@using AIStoryBuildersV2.Shared.Components.Chat
+@using AIStoryBuildersV2.Shared.StoryChat
 @using AIStoryBuildersV2.Shared.Knowledge
 @using AIStoryBuildersV2.Shared.Stories.Storage
 @implements IAsyncDisposable
@@ -13,6 +15,7 @@
 @inject NotificationService Notify
 @inject IFileExportService Export
 @inject LogService Log
+@inject IStoryChatService ChatService
 <PageTitle>@Title · AI StoryBuilders</PageTitle>
 <ServiceEventToasts />
 
@@ -94,7 +97,7 @@ else
                 <ManuscriptEditor Story="story" />
                 break;
             case "chat":
-                <div class="asb-ws-wrap"><p class="asb-note">Story Chat arrives in T13.</p></div>
+                <div class="asb-ws-wrap asb-ws-chat"><StoryChatTab Story="story" Bubbles="chatBubbles" /></div>
                 break;
             case "kb":
                 <div class="asb-ws-wrap"><p class="asb-note">The Knowledgebase arrives in T15.</p></div>
@@ -122,6 +125,7 @@ else
     bool quotaBanner;
     bool elsewhereBanner;
     bool deleted;
+    readonly List<ChatBubble> chatBubbles = [];
     IDisposable? navigationLock;
 
     string SaveIcon => saveState switch { SaveState.Saving => "sync", SaveState.Unsaved => "edit", SaveState.Failed => "error", _ => "check_circle" };
@@ -264,7 +268,12 @@ else
     /// <summary>Leaving /story/{title}: unsaved KB pages, then flush; a failed flush asks first (UI-Behavior-Spec §9.1).</summary>
     async ValueTask OnLocationChangingAsync(LocationChangingContext context)
     {
-        if (story is null || deleted) return;
+        if (story is null) return;
+        if (deleted)
+        {
+            ChatService.ClearSession(story.Title);
+            return;
+        }
         var target = Nav.ToBaseRelativePath(context.TargetLocation);
         var own = "story/" + Uri.EscapeDataString(story.Title);
         if (target.Split('?')[0].Equals(own, StringComparison.OrdinalIgnoreCase) || target.Split('?')[0].Equals("story/" + story.Title, StringComparison.OrdinalIgnoreCase)) return;
@@ -283,6 +292,7 @@ else
                 return;
             }
         }
+        ChatService.ClearSession(story.Title);
     }
 
     public ValueTask DisposeAsync()

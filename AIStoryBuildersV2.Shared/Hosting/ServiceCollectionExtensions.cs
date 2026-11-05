@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITimelineSummaryGenerator, TimelineSummaryGenerator>();
         services.AddSingleton<ManuscriptParsingService>();
         services.AddSingleton<ParagraphAiHelper>();
+        services.AddSingleton<StoryChat.IStoryChatService, StoryChat.StoryChatService>();
         return services;
     }
 }

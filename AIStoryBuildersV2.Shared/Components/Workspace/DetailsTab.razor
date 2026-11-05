@@ -110,7 +110,7 @@
         busy = true;
         try
         {
-            await Dialogs.OpenAsync<ReloadProgressDialog>("Re-load Story", new Dictionary<string, object> { ["Story"] = Story },
+            await Dialogs.OpenAsync<ReloadProgressDialog>("Re-load Story", new Dictionary<string, object?> { ["Story"] = Story },
                 new DialogOptions { Width = "440px", ShowClose = false, CloseDialogOnEsc = false, CloseDialogOnOverlayClick = false });
         }
         finally
