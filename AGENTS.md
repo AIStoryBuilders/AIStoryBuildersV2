@@ -49,10 +49,10 @@ dotnet test AIStoryBuildersV2.Tests/AIStoryBuildersV2.Tests.csproj
 | Never check whether a story exists with `Directory.Exists`. Ask `IStoryLibraryStore`, because in WASM, MEMFS holds only the open story. | D5, D25 |
 | Every method in the plan's §6.2 MarkDirty list calls `IStoryPersistence.MarkDirty(title)` after its last write. Add any new writing method to that list and to its test. | §6.2 |
 | Never call `ZipFile.ExtractToDirectory`. Extract entry by entry, with the Zip Slip guard. | D22 |
-| Validate story titles with `StoryTitle.Validate` before using one as a path, a key or a route | D29 |
+| Validate story titles with `StoryTitle.Validate` when a story is created, renamed or imported. Existing V1 folders are grandfathered (D29). | D29 |
 | No sync-over-async (`.Result`, `.Wait()`, `GetAwaiter().GetResult()`) in Shared code | D25 |
 | No static mutable state. Use `StoryGraphCache` with `StoryGraphContext`, and give each story its own KB. | D17, D26, D13 |
-| Every AI call gets its client from `IChatClientProvider.GetClientAsync(model)`, and only verified models are offered | D9, D10 |
+| Every AI call gets its client from `IChatClientProvider.GetClientAsync(model)`, and only verified models are offered. The one exception is the capability probe, which builds its own client from the unsaved settings (§5.9). | D9, D10 |
 | KB tools available to story AI are read-only, prefixed `kb_`, and offered only when **Search knowledgebase** is checked | D14 |
 | No CDN or third-party scripts and no external fonts. Vendor everything into `wwwroot`. | D18, §9 |
 | Never put API keys, passwords, real hostnames or personal data in code, tests, logs, docs or commits | §9 |
@@ -73,5 +73,5 @@ Don't modify the reference repositories.
 
 ## Build notes
 
-- The iOS, Android and Mac Catalyst targets build only when `-p:IncludeMobileTargets=true` is passed, and iOS and Mac Catalyst need macOS. Build the Windows TFM and the Web project on Windows.
+- After T0, the iOS, Android and Mac Catalyst targets build only when `-p:IncludeMobileTargets=true` is passed, and iOS and Mac Catalyst need macOS. Build the Windows TFM and the Web project on Windows.
 - .NET 11 is a release candidate here. Package versions are in plan §6.6. Don't move to newer prereleases unless a build needs it, and if you do, say why in the commit.

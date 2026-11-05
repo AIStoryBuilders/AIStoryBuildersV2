@@ -9,7 +9,7 @@ This file contains no secrets. Supply keys only through environment variables or
 |---|---|---|
 | Windows | 10.0.19041 or later | The MAUI app's Windows TFM is `net11.0-windows10.0.19041.0` |
 | .NET SDK | `11.0.100-rc.3.26522.148` | Pinned in `global.json` after T0 (plan §6.6), with `allowPrerelease: true`. The .NET 10 SDKs can stay installed. |
-| MAUI workload | Must match the rc.3 SDK | Today the workloads are **managed by Visual Studio 18.11** at the `11.0.100-preview.6` manifest, so `dotnet workload update` cannot change them. See §2. |
+| MAUI workload | Must match the rc.3 SDK | Today the workloads are **managed by Visual Studio 18.11** at `11.0.0-preview.6.26360.8` (manifest band `11.0.100-preview.6`), so `dotnet workload update` cannot change them. See §2. |
 | Visual Studio | 18.x with the .NET MAUI workload | Optional for the Web app, practical for MAUI debugging |
 | Aspire | `Aspire.AppHost.Sdk 13.6.4`, `Aspire.Hosting.Maui 13.6.4-preview.1.26523.11` | Dev-time only (plan G1). The `aspire` CLI is optional. |
 | Node.js | not required | Use any static file server for the published WASM smoke test (§4). `npx serve -s` is one option. |

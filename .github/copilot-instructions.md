@@ -17,6 +17,6 @@ Guidance:
   host-specific services (file storage, settings, AI keys) in `MauiProgram.cs` and
   `AIStoryBuildersV2.Web/Program.cs`.
 - Behavioural reference for the domain (story/chapter/paragraph model, manuscript import,
-  multi-provider AI, knowledge graph): the existing `ADefWebserver/AIStoryBuilders` app.
-- The Knowledgebase tab follows `ADefWebserver/KnowledgeGraphBuilder`.
+  multi-provider AI, knowledge graph): the existing AIStoryBuilders V1 app (local path in AGENTS.md).
+- The Knowledgebase tab follows KnowledgeGraphBuilder (local path in AGENTS.md).
 - iOS/MacCatalyst target only builds on macOS; build the Windows TFM and the Web project on Windows.

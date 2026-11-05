@@ -1,6 +1,8 @@
 # AI StoryBuilders — Design Specification
 
-This folder is the **source of truth for the UI** of AIStoryBuildersV2. An AI (or a developer)
+> Where this file disagrees with [the plan](../AIStoryBuildersV2-Plan.md) or [UI-Behavior-Spec.md](../UI-Behavior-Spec.md), they win. UI-Behavior-Spec §19 lists every resolved conflict; for example, the Workspace is a page, not a dialog, and the Manuscript Editor is the Chapters tab.
+
+This folder is the **source of truth for the UI's look** of AIStoryBuildersV2. An AI (or a developer)
 should implement the Blazor UI in `AIStoryBuildersV2.Shared` to match the screens described here.
 
 ## Files

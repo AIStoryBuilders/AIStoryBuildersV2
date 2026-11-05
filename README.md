@@ -1,5 +1,7 @@
 # AIStoryBuildersV2
 
+> **This describes the scaffold as first committed. [AGENTS.md](AGENTS.md) and [the plan](Docs/AIStoryBuildersV2-Plan.md) supersede it:** the plan retargets to .NET 11, makes mobile targets opt-in and leaves ServiceDefaults unreferenced. Task T0 updates this file.
+
 A .NET 10 rewrite scaffold for **AI StoryBuilders**, structured like
 [KnowledgeGraphBuilder](https://github.com/ADefWebserver/KnowledgeGraphBuilder): a **Windows MAUI
 Blazor Hybrid** app and a **Blazor WebAssembly** app that share one Razor class library, wired for

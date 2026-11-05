@@ -32,7 +32,7 @@
 
 | Topic | Rule | Source |
 |---|---|---|
-| Unexpected exception in any handler | `Error · "Error" / ex.Message · 4 s`, then `LogService.WriteToLogAsync(ex.Message)`. Clear any busy flag. Unless a row says otherwise, this is the "Failure result". | V1 (every component) |
+| Unexpected exception in any handler | `Error · "Error" / ex.Message · 4 s`, then `LogService.WriteToLog(ex.Message)`. Clear any busy flag. Unless a row says otherwise, this is the "Failure result". | V1 (every component) |
 | Service progress events | Library and Workspace subscribe to `Svc.TextEvent` and `Orch.ReadTextEvent` and show `Info · "" / e.Message · e.DisplayLength × 1000 ms`. Unsubscribe on dispose. | [Index.razor:437-461](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Index.razor) |
 | File export | Every download calls `Export.SaveAsync(name, stream, contentType)`. `false` (MAUI save dialog cancelled) shows **no** toast **(new)**. The browser always returns `true`. | Plan D19 |
 | File pick | `InputFile` in both apps, with `accept` set. Over the size cap: `Error · "Error" / "The file is larger than {N} MB." · 4 s` **(new)**, nothing is read. | Plan D19, §9 |
@@ -52,7 +52,7 @@
 | `/logs`, `/utility`, `/settings` | Logs, Utility, Settings | D20 |
 | `/story/{title}?tab=<tab>&p=<kbPath>` | Story Workspace. `title` is `Uri.EscapeDataString`. | D20, D29 |
 
-`tab` values: `details`, `timelines`, `locations`, `characters`, `chapters`, `chat` **(new)**, and `kb` (D13). A missing or unknown `tab` means `chapters` (Plan §5.6). Changing tabs updates the URL with `replace: true` **(new)**. `p` is read only when `tab=kb`. `&create=1` (from `KbLinkBuilder.CreateHref`) creates the page instead of opening it (§17.6).
+`tab` values: `details`, `timelines`, `locations`, `characters`, `chapters`, `chat` **(new)**, and `kb` (D13). A missing or unknown `tab` means `chapters` (Plan §5.6). Changing tabs updates the URL with `replace: true` **(new)**. `p` is read only when `tab=kb`. `&create=1` (from `KbLinkBuilder.CreateHref`) creates the page instead of opening it (§17.5).
 
 ---
 
@@ -84,7 +84,7 @@ Header: "Your stories" **(design)**, sub "Start a new manuscript, import a proje
 | New Story | Success · `add` | not busy | Open the New Story dialog (§3) | — | §3 | §3 |
 | Import Story | Light · `publish` | not busy | `InputFile accept=".stybld"` (§4) | — | §4 | §4 |
 | Import docx / pdf / txt **(design)** | Info · `description` | not busy | Open the Import Manuscript dialog (§5) | — | §5 | §5 |
-| Story card **Select** | Light · — | not busy | WASM: `await Persist.OpenAsync(title)` first. Then navigate `/story/{EscapeDataString(title)}`. | — | The Workspace opens on the Chapters tab | WASM, zip missing or corrupt: the card shows "Story data is missing from browser storage" **(plan, §7.1)** and a **Remove from library** button. Quota while flushing another story: the quota banner text from §9 as an Error toast. |
+| Story card **Select** | Light · — | not busy | WASM: `await Persist.OpenAsync(title)` first. Then navigate `/story/{EscapeDataString(title)}`. | — | The Workspace opens on the Chapters tab | WASM, zip missing or corrupt: the card shows "Story data is missing from browser storage" **(plan, §7.1)** and a **Remove from library** button. Quota while flushing another story: the quota banner text from §9 as an Error toast, and the selected story does not open (Plan §5.5). |
 | Remove from library | Danger · `delete` | only on a card in the missing-data state (WASM) | `Svc.DeleteStoryAsync(title)` | **Remove from library** / "Are you sure?" **(new)** | Reload the list | Global |
 | No-model card: Open Settings **(new)** | Primary · `line_style` | shown when `AppSettings.VerifiedModels` is empty | navigate `/settings` | — | — | — |
 
@@ -95,7 +95,7 @@ Header: "Your stories" **(design)**, sub "Start a new manuscript, import a proje
 | No-model card **(new)** | Shown above the cards when there is no verified model. Text: "Connect an AI provider and verify a model before you create or write stories." **(new)**. New Story stays enabled, but its model dropdown is empty and Create Story is disabled (§0.3). |
 | Empty state **(new)** | "No stories yet. Create one with New Story, or import a project." |
 | Loading **(new)** | Four skeleton cards until `GetStorysAsync` returns |
-| Busy (creating or importing) | V1: an indeterminate `RadzenProgressBar` at the top. During manuscript import the bar shows a percent and the status text (§5). The action buttons are disabled **(new)**. |
+| Busy (creating or importing) | V1: an indeterminate `RadzenProgressBar` at the top. During manuscript import, progress shows inside the Import Manuscript dialog (§5). The action buttons are disabled **(new)**. |
 | Keyboard | none |
 
 ---
@@ -194,7 +194,7 @@ Removed: V1's Azure **Api Version** (Plan D8) and Organization (D31).
 | Replace | Light (KGB: Outlined Base) · — | key configured | Shows the key input; **Cancel** **(KGB)** hides it again | — | — | — |
 | Clear key | Danger (Text) · — | key configured | `Settings.ClearApiKeyAsync()` | — (KGB has none) | `Info · "API key cleared" · 3 s` **(KGB)**. Reload the model list. | Global |
 | Test connection | Light (KGB: Outlined Base) · `network_check`, `BusyText="Testing…"` **(KGB)** | not busy | If dirty, run **Save** first and stop on failure. Then `Settings.TestConnectionAsync(30 s)`. | — | Callout (success): "Connected to {Provider} ({model})." **(KGB)** | Callout (danger) with the returned message |
-| Save | Primary · `save`, `IsBusy`, `BusyText="Verifying model…"` **(new)** | dirty (KGB `Dirty`) and inline validation passes | `var r = await Settings.SaveAsync(provider, model, endpoint, newKey, ct)`. The service probes when `model` is not verified for this provider and host (Plan §5.9): Connect, then A (tool call), then B (graph parse). | — | `Success · "Settings saved" · 3 s` **(KGB)**. If a probe ran, also `Success · "Model verified" / "{model} passed the capability check." · 4 s` **(new)**. Clear the key box, reload the model list, raise `Changed` so other dropdowns refresh. | `r.Saved == false` with a probe: danger callout "{model} did not pass the {stage} check: {r.Probe.Message} Nothing was saved." **(new)**. Stage names **(new)**: Connect = "connection", ToolCall = "tool call", GraphParse = "knowledge graph". Other error: callout with `r.Error`. WASM quota: callout "Browser storage is full, so the settings weren't saved. Export a backup and delete pages you don't need." **(KGB)** |
+| Save | Primary · `save`, `IsBusy`, `BusyText="Verifying model…"` **(new)** | dirty (KGB `Dirty`) and inline validation passes | `var r = await Settings.SaveAsync(provider, model, endpoint, newKey, ct)`. The service probes when `model` is not verified for this provider and host (Plan §5.9): Connect, then A (tool call), then B (graph parse). | — | `Success · "Settings saved" · 3 s` **(KGB)**. If a probe ran, also `Success · "Model verified" / "{model} passed the capability check." · 4 s` **(new)**. Clear the key box, reload the model list, raise `Changed` so other dropdowns refresh. | `r.Saved == false` with a probe: danger callout "{model} did not pass the {stage} check: {r.Probe.Message} Nothing was saved." **(new)**. Stage names **(new)**: Connect = "connection", ToolCall = "tool call", GraphParse = "knowledge graph". Other error: callout with `r.Error`. WASM quota: callout "Browser storage is full, so the settings weren't saved. Export stories you don't need with Export Project, then delete them from the Library." **(new; KGB points to its own backup)** |
 
 Behavior notes:
 
@@ -246,9 +246,9 @@ V1: [Logs.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Logs.ra
 
 | Item | Spec |
 |---|---|
-| Data | `IAppDataStore.ReadAsync(AppDataFile.Log)`, split on `\n`, drop a trailing empty line. Newest first, at most 1000 lines (V1 format). |
+| Data | `IAppDataStore.ReadAsync(AppDataFile.Log)`, split on `\n`, drop a trailing empty line. Newest first, at most 1,001 lines (V1 format). |
 | Grid | `RadzenDataGrid`, columns **Date** and **Entry** **(design)**, paging 20 per page **(new)**, `ShowPagingSummary`. |
-| Date column **(new)** | V1 lines have no date. V2's `LogService.WriteToLogAsync` writes `"{yyyy-MM-dd HH:mm:ss} {text}"` (invariant culture, still one text line, so V1 can read it). The grid shows the leading timestamp in **Date** when a line matches `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} `, and "—" otherwise. |
+| Date column **(new)** | V1 lines have no date. V2's `LogService.WriteToLog` writes `"{yyyy-MM-dd HH:mm:ss} {text}"` (invariant culture, still one text line, so V1 can read it). The grid shows the leading timestamp in **Date** when a line matches `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} `, and "—" otherwise. |
 | Empty **(new)** | "The log is empty." |
 | Loading | Indeterminate bar |
 
@@ -323,14 +323,14 @@ Layout: [StoryWorkspace.dc.html](Design/StoryWorkspace.dc.html) top bar and tab 
 | Title | Story title, subline "Story workspace · AIStoryBuilders" **(design)** | — | — | — | — | — |
 | Save state | Pill with icon: `check_circle` "Saved", `sync` "Saving…", `edit` "Unsaved", `error` "Save failed" **(plan, §5.6)**. "Save failed" adds **Retry** (Light, small). MAUI always shows "Saved". | — | Driven by `Persist.Changed` and `Persist.IsDirty(title)` | — | — | — |
 | Retry (in the pill) | Light · `refresh` | Save failed | `Persist.FlushAsync(title)` | — | Pill shows "Saved"; the quota banner closes | The banner stays |
-| Close workspace | Icon button · `close`, aria-label "Close workspace" **(design)** | always | Navigate `/` (runs §9.1 Leave) | Only if the flush fails: **Unsaved changes** / "Your latest changes could not be saved to browser storage. Leave anyway and lose them?" **(new)**, with Yes / No | Library | No: stay; the banner stays |
+| Close workspace | Icon button · `close`, aria-label "Close workspace" **(design)** | always | Navigate `/` (runs §9.1 Leave) | Only if the flush fails: **Unsaved changes** / "Your latest changes could not be saved to browser storage. They are kept only until this browser tab closes. Leave anyway?" **(new)**, with Yes / No | Library | No: stay; the banner stays |
 
 ### 9.3 Banners (WASM)
 
 | Banner | Text | Buttons | Action |
 |---|---|---|---|
 | Quota (Plan §5.5 step 5) | "Browser storage is full. Your latest changes are kept in this tab but are not saved." **(new)** | **Export Project** (Primary, `save_alt`), **Retry** (Light, `refresh`) | Export Project: same as Details §10.2 (built from MEMFS). Retry: `Persist.FlushAsync(title)`. |
-| Changed in another tab (Plan §5.5 step 6) | "This story was changed in another tab" **(plan)** | **Reload** (Primary, `sync`), **Keep mine** (Light) | Reload: drop the MEMFS copy, `Persist.OpenAsync(title)`, reload the current tab. Keep mine: `Persist.MarkDirty(title)` then `FlushAsync`. |
+| Changed in another tab (Plan §5.5 step 6) | "This story was changed in another tab" **(plan)** | **Reload** (Primary, `sync`), **Keep mine** (Light) | Reload: `Persist.ReloadAsync(title)` (drops the MEMFS copy and the dirty flag), then reload the current tab. Keep mine: `Persist.MarkDirty(title)` then `FlushAsync`. |
 
 ### 9.4 Tab strip
 
@@ -538,7 +538,7 @@ V1: [ChaptersControl.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pa
 
 | Control | Style/icon | Enabled when | Action | Confirm | Success | Failure |
 |---|---|---|---|---|---|---|
-| New Chapter | Success · `add` | not busy | Open the **New Chapter dialog**: title "Chapter {count+1}", field "Synopsis:" (`RadzenTextArea Rows=4 MaxLength=4000`), **Save** (Success). Save runs `await Svc.AddChapterAsync(chapter, "Chapter{N}")` and returns the name. | — | Reload; select the new chapter (V1 `LoadChapters(story, result)`) | Empty synopsis: `Error · "Error" / "Synopsis is required" · 4 s` (dialog stays open). Global. |
+| New Chapter | Success · `add` | not busy | Open the **New Chapter dialog**: title "Chapter {count+1}", field "Synopsis:" (`RadzenTextArea Rows=4 MaxLength=4000`, as V1 `ChaptersEdit`; the paper Synopsis keeps V1's 1000, so both V1 limits stay), **Save** (Success). Save runs `await Svc.AddChapterAsync(chapter, "Chapter{N}")` and returns the name. | — | Reload; select the new chapter (V1 `LoadChapters(story, result)`) | Empty synopsis: `Error · "Error" / "Synopsis is required" · 4 s` (dialog stays open). Global. |
 | Save | Success · `save` | not busy | `await Svc.UpdateChapterAsync(selectedChapter)` (saves the synopsis) | — | `Success · "Update" / "Saved" · 2 s` | Global |
 | Insert chapter before | Success · `note_add`, icon only, tooltip "Insert chapter before" **(plan)** | not busy | `Svc.RestructureChapters(selected, RestructureType.Add)`; new chapter `ChapterName = "Chapter{selected.Sequence}"`, `Synopsis = "New Chapter"`; `await Svc.InsertChapterAsync(newChapter)`; reload; select "Chapter {N}" | **Add new Chapter before this Chapter** / "Are you sure?" | `Success · "New Chapter" / "Created" · 2 s` | Global |
 | Delete | Danger · `delete` | hidden when `OnlyChapter` (V1); not busy | `Svc.DeleteChapter(selected)`, then `Svc.RestructureChapters(selected, RestructureType.Delete)`; reload; select the first chapter | **Delete {ChapterName}?** / "Are you sure?" | List reloads | Global |
@@ -603,7 +603,7 @@ Busy: an indeterminate bar replaces the toolbar and text area (V1); Esc and X ar
 | "Describe paragraph or provide prompt instructions (optional):" | `RadzenTextArea`, placeholder "e.g. continue from Freya's threat, keep it tense" **(design)** | `MaxLength=500` | empty |
 | "Number of words to generate:" | `RadzenDropDown`: 10, 20, 50, 100, 200, 300, 500, 800, 1000 | — | V1 `SetNumberOfWords(text)`: fewer than 10 words gives 200; under 20 gives 20; under 50 gives 50; under 100 gives 100; under 200 gives 200; under 300 gives 300; under 500 gives 500; under 800 gives 800; otherwise 1000 |
 | "AI Model:" | Verified-model dropdown (§0.3) | — | the default model |
-| Search knowledgebase **(plan)** | `RadzenCheckBox` under AI Model | — | D16: checked when `await CurKb.IsEmptyAsync()` is false. When the KB is empty: unchecked and disabled, with the help text "This story's knowledge base is empty" **(plan)**. The choice is kept per story for this session (D16). |
+| Search knowledgebase **(plan)** | `RadzenCheckBox` under AI Model | — | D16: checked when `await CurKb.IsEmptyAsync()` is false. When the KB is empty: unchecked and disabled, with the help text "This story's knowledge base is empty" **(plan)**. The choice is kept per story and per surface for this session (D16). |
 
 | Control | Style/icon | Enabled when | Action | Confirm | Success | Failure |
 |---|---|---|---|---|---|---|
@@ -727,9 +727,9 @@ The view toggle is component state, not a URL parameter **(new)**. Opening a `?p
 | Properties | Collapsible YAML box; "(none)" when absent; placeholder "title: My page" **(KGB)** | not Preview | Edit the front matter | — | — | Inline: "{error}. Saving is still allowed; the graph ignores these properties." **(KGB)** |
 | Body | Design: `RadzenMarkdownEditor`. Source: monospace `RadzenTextArea Rows=22`. Preview: `SafeMarkdown.ForPreview` with `CurKb.Links`. `[[links]]` in Preview are clickable: resolved ones open the page, unresolved ones create it (`CreateHref`). | — | — | — | — | — |
 | Revert | Light (artboard; KGB Outlined Base) · `undo` | dirty and the page exists | Reload the page from the store | — | — | — |
-| Save | Primary · `save`, title "Save (Ctrl+S)" **(KGB)** | not saving, and dirty or not found | `Workspace.SavePageAsync(path, markdown, ticks)` | Conflict: **This page changed** / "{path} was changed in another tab since you opened it. Reload to get the latest version, or overwrite it with your text." (WASM) or "{path} was changed outside the app since you opened it. Reload to get the latest version, or overwrite it with your text." (MAUI), with Cancel / Overwrite / Reload **(KGB)** | `Success · "Saved" · 2 s` **(KGB)** | `Warning · "Not saved" / message · 6 s` **(KGB)**; errors via `ShowError` |
+| Save | Primary · `save`, title "Save (Ctrl+S)" **(KGB)** | not saving, and dirty or not found | `Workspace.SavePageAsync(path, markdown, ticks)` | Conflict: **This page changed** / "{path} was changed since you opened it. Reload to get the latest version, or overwrite it with your text." (WASM; ticks are per tab, D12, so this is a same-tab change) or "{path} was changed outside the app since you opened it. Reload to get the latest version, or overwrite it with your text." (MAUI), with Cancel / Overwrite / Reload **(KGB)** | `Success · "Saved" · 2 s` **(KGB)** | `Warning · "Not saved" / message · 6 s` **(KGB)**; errors via `ShowError` |
 | Not-found callout | "This page no longer exists. Your text is still here; save it as a new page to keep it." with **Save as new page** (Primary) and **Close** **(KGB)** | the page was deleted elsewhere | Save as new: the new-page dialog with the current text. Close: clear the editor. | — | — | Toast on load: `Warning · "Page not found" / "{path} doesn't exist." · 6 s` **(KGB)** |
-| Changed-elsewhere callout | "This page changed in another tab while you were editing. Saving will ask what to keep." (WASM) or "…changed elsewhere…" (MAUI) **(KGB)** | dirty and the stored ticks changed | — | — | — | — |
+| Changed-elsewhere callout | "This page changed while you were editing. Saving will ask what to keep." (WASM) or "…changed elsewhere…" (MAUI) **(KGB)** | dirty and the stored ticks changed | — | — | — | — |
 
 | State | Spec |
 |---|---|
