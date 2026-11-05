@@ -18,10 +18,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- R14: libraries that rely on reflection are kept whole when trimming. -->
+    <!-- R11/R14: libraries that rely on reflection are kept whole when trimming (checked by the T18 published smoke test). -->
     <TrimmerRootAssembly Include="YamlDotNet" />
     <TrimmerRootAssembly Include="Microsoft.Extensions.AI" />
     <TrimmerRootAssembly Include="Microsoft.Extensions.AI.Abstractions" />
+    <TrimmerRootAssembly Include="Newtonsoft.Json" />
+    <TrimmerRootAssembly Include="Xceed.Document.NET" />
+    <TrimmerRootAssembly Include="Xceed.Words.NET" />
+    <TrimmerRootAssembly Include="Xceed.Drawing.NET" />
+    <TrimmerRootAssembly Include="EPPlus" />
+    <TrimmerRootAssembly Include="ExcelDataReader" />
+    <TrimmerRootAssembly Include="UglyToad.PdfPig" />
+    <TrimmerRootAssembly Include="OpenAI" />
   </ItemGroup>
 
 </Project>
