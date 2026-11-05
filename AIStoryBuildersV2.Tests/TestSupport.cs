@@ -6,6 +6,8 @@ using AIStoryBuildersV2.Shared.Hosting;
 using AIStoryBuildersV2.Shared.Models;
 using AIStoryBuildersV2.Shared.Stories;
 using AIStoryBuildersV2.Shared.Stories.Storage;
+using System.Runtime.CompilerServices;
+using AIStoryBuildersV2.Shared.Settings;
 using Microsoft.Extensions.AI;
 
 namespace AIStoryBuildersV2.Tests;
@@ -154,5 +156,106 @@ public sealed class CultureScope : IDisposable
     {
         System.Globalization.CultureInfo.CurrentCulture = _culture;
         System.Globalization.CultureInfo.CurrentUICulture = _ui;
+    }
+}
+
+/// <summary>One scripted model response: updates to stream, then optionally an exception.</summary>
+public sealed record ScriptStep(IReadOnlyList<ChatResponseUpdate> Updates, Exception? ThrowAfter = null);
+
+/// <summary>An <see cref="IChatClient"/> that plays back queued responses and records what it receives.</summary>
+public sealed class ScriptedChatClient : IChatClient
+{
+    readonly Queue<ScriptStep> _steps = new();
+    int _messageCounter;
+
+    public List<List<ChatMessage>> Requests { get; } = [];
+    public List<ChatOptions?> Options { get; } = [];
+
+    /// <summary>Used when the queue is empty (null = throw).</summary>
+    public Func<ScriptStep>? Fallback { get; set; }
+
+    public int Remaining => _steps.Count;
+
+    public ScriptedChatClient Enqueue(params ChatResponseUpdate[] updates)
+    {
+        _steps.Enqueue(new ScriptStep(updates));
+        return this;
+    }
+
+    public ScriptedChatClient EnqueueText(string text) => Enqueue(Text(text));
+
+    public ScriptedChatClient EnqueueCalls(params FunctionCallContent[] calls) => Enqueue(Calls(calls));
+
+    public ScriptedChatClient EnqueueFailure(Exception ex, params ChatResponseUpdate[] before)
+    {
+        _steps.Enqueue(new ScriptStep(before, ex));
+        return this;
+    }
+
+    public ChatResponseUpdate Text(string text) => new(ChatRole.Assistant, text) { MessageId = NextId(), FinishReason = ChatFinishReason.Stop };
+
+    public ChatResponseUpdate Calls(params FunctionCallContent[] calls)
+    {
+        var update = new ChatResponseUpdate { Role = ChatRole.Assistant, MessageId = NextId(), FinishReason = ChatFinishReason.ToolCalls };
+        foreach (var c in calls) update.Contents.Add(c);
+        return update;
+    }
+
+    string NextId() => "msg_" + Interlocked.Increment(ref _messageCounter);
+
+    public static FunctionCallContent Call(string id, string name, params (string Key, object? Value)[] args) =>
+        new(id, name, args.ToDictionary(a => a.Key, a => a.Value));
+
+    public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        var updates = new List<ChatResponseUpdate>();
+        await foreach (var u in GetStreamingResponseAsync(messages, options, cancellationToken)) updates.Add(u);
+        return updates.ToChatResponse();
+    }
+
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        Requests.Add(messages.Select(m => m.Clone()).ToList());
+        Options.Add(options);
+        ScriptStep step;
+        if (_steps.Count > 0) step = _steps.Dequeue();
+        else if (Fallback is not null) step = Fallback();
+        else throw new InvalidOperationException("The scripted client has no more responses.");
+
+        foreach (var update in step.Updates)
+        {
+            await Task.Yield();
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return update;
+        }
+        if (step.ThrowAfter is not null) throw step.ThrowAfter;
+    }
+
+    public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+    public void Dispose() { }
+}
+
+public sealed class FakeChatClientProvider(IChatClient? client, string? reason = null) : IChatClientProvider
+{
+    public List<string?> Models { get; } = [];
+
+    public Task<ChatClientResult> GetClientAsync(string? model = null)
+    {
+        Models.Add(model);
+        return Task.FromResult(new ChatClientResult(client, client is null ? reason ?? "Add an API key in Settings" : null));
+    }
+}
+
+/// <summary>An <see cref="IModelCapabilityProbe"/> that records calls and returns a fixed result.</summary>
+public sealed class StubProbe(bool pass = true, ProbeStage failAt = ProbeStage.ToolCall, string message = "The model answered in text and did not call kb_read_page.") : IModelCapabilityProbe
+{
+    public List<Shared.Llm.LlmOptions> Calls { get; } = [];
+
+    public Task<ModelProbeResult> ProbeAsync(Shared.Llm.LlmOptions options, CancellationToken ct)
+    {
+        Calls.Add(options);
+        return Task.FromResult(pass ? new ModelProbeResult(true, null, null, TimeSpan.Zero) : new ModelProbeResult(false, failAt, message, TimeSpan.Zero));
     }
 }

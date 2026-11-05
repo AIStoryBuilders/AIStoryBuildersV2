@@ -1,5 +1,7 @@
 using AIStoryBuildersV2.Shared.AI;
 using AIStoryBuildersV2.Shared.Graph;
+using AIStoryBuildersV2.Shared.Llm;
+using AIStoryBuildersV2.Shared.Settings;
 using AIStoryBuildersV2.Shared.Services;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +33,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<StoryGraphCache>();
         services.AddSingleton<IGraphBuilder, GraphBuilder>();
         services.AddSingleton<AIStoryBuildersService>();
+
+        // AI settings and the capability gate (D7, D9, D10). The host registers ISettingsStore.
+        services.AddSingleton<IModelCapabilityProbe, ModelCapabilityProbe>();
+        services.AddSingleton<AppSettingsService>();
+        services.AddSingleton<IAppSettingsService>(sp => sp.GetRequiredService<AppSettingsService>());
+        services.AddSingleton<IChatClientProvider>(sp => sp.GetRequiredService<AppSettingsService>());
         return services;
     }
 }

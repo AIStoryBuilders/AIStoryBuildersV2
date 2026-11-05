@@ -40,6 +40,9 @@
   --rz-danger: var(--asb-danger);
   --rz-warning: var(--asb-warning);
   --rz-info: var(--asb-info);
+  --rz-secondary: #51515f;
+  --rz-secondary-light: #6b6b78;
+  --rz-secondary-dark: #3f3f4a;
   --rz-text-font-family: var(--asb-ui-font);
   --rz-body-font-size: 14px;
 }
@@ -99,8 +102,6 @@ h3.asb-sec { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin:
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .asb-ws-title span { font-size: 11px; color: var(--asb-muted); }
 
-.mi { font-family: "Material Symbols"; font-weight: 400; font-style: normal; font-size: 18px; line-height: 1; width: 1em; height: 1em;
-  overflow: hidden; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; }
 
 #blazor-error-ui { display: none; position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px;
   background: #fdecea; color: #7d1a14; z-index: 1000; }
@@ -120,3 +121,11 @@ h3.asb-sec { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin:
 .asb-mt { margin-top: 12px; }
 .asb-note { font-size: 11.5px; color: var(--asb-muted); }
 .asb-err { color: var(--asb-danger); }
+
+/* ---------- forms ---------- */
+.asb-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.asb-field > label { font-size: 12.5px; font-weight: 600; color: var(--asb-ink); }
+.asb-panel-h { font-size: 15px; font-weight: 700; margin: 0 0 4px; color: var(--asb-ink); }
+.asb-vm-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--asb-line); }
+.asb-vm-row:last-of-type { border-bottom: none; }
+.asb-panel .kgb-help { margin-top: 2px; }

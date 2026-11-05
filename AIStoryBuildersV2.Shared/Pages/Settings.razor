@@ -1,9 +1,12 @@
 @page "/settings"
+@inject NavigationManager Nav
 <PageTitle>Settings · AI StoryBuilders</PageTitle>
 
 <h3 class="asb-sec">Settings</h3>
 <p class="asb-sub">Connect an AI provider. Embeddings run locally — no cloud embedding calls needed.</p>
 
+<LlmSettingsForm Saved="OnSaved" />
+<VerifiedModelsPanel />
 <StorageUsagePanel />
 @if (IsDebug)
 {
@@ -16,4 +19,13 @@
 #else
     const bool IsDebug = false;
 #endif
+
+    /// <summary>Set when the Library sent a first-run user here (UI-Behavior-Spec §1).</summary>
+    [SupplyParameterFromQuery(Name = "firstRun")] public bool FirstRun { get; set; }
+
+    /// <summary>After the first successful save, a first-run user returns to the Library, as V1 did.</summary>
+    void OnSaved()
+    {
+        if (FirstRun) Nav.NavigateTo("");
+    }
 }

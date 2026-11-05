@@ -1,6 +1,7 @@
 using AIStoryBuildersV2.Shared;
 using AIStoryBuildersV2.Shared.Hosting;
 using AIStoryBuildersV2.Shared.Knowledge.Persistence;
+using AIStoryBuildersV2.Shared.Settings;
 using AIStoryBuildersV2.Shared.Stories;
 using AIStoryBuildersV2.Shared.Stories.Storage;
 using AIStoryBuildersV2.Web.Services;
@@ -30,9 +31,14 @@ builder.Services.AddSingleton<StorageEventBridge>();
 builder.Services.AddSingleton<IStoryLibraryStore, LocalStorageStoryLibraryStore>();
 builder.Services.AddSingleton<IAppDataStore, LocalStorageAppDataStore>();
 builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>, BrowserEmbeddingGenerator>();
+builder.Services.AddSingleton<ISettingsStore, BrowserSettingsStore>();
 builder.Services.AddAIStoryBuildersV2Shared();
 
 var host = builder.Build();
 await host.Services.GetRequiredService<LogService>().InitializeAsync();
-await host.Services.GetRequiredService<StorageEventBridge>().StartAsync();
+var bridge = host.Services.GetRequiredService<StorageEventBridge>();
+var settings = host.Services.GetRequiredService<AppSettingsService>();
+// Another tab changed the settings: reload them (KGB's StorageEventBridge).
+bridge.KeyChanged += key => { if (key is null || key == StoryStorageConstants.SettingsKey) _ = settings.ReloadAsync(); };
+await bridge.StartAsync();
 await host.RunAsync();
