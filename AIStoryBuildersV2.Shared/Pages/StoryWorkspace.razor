@@ -1,0 +1,18 @@
+@page "/story/{Title}"
+@layout WorkspaceLayout
+@inject NavigationManager Nav
+<PageTitle>@Title · AI StoryBuilders</PageTitle>
+
+<header class="asb-topbar asb-ws-top">
+    <div class="asb-ws-title">
+        <b>@Title</b>
+        <span>Story workspace · AIStoryBuilders</span>
+    </div>
+    <span class="asb-sp"></span>
+    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Base" Variant="Variant.Outlined" class="asb-icon-btn"
+                  aria-label="Close workspace" title="Close workspace" Click="@(() => Nav.NavigateTo(""))" />
+</header>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+}

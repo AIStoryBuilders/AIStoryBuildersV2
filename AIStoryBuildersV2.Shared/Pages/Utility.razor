@@ -1,0 +1,27 @@
+@page "/utility"
+@using System.Text
+@inject IFileExportService Export
+@inject NotificationService Notify
+<PageTitle>Utility · AI StoryBuilders</PageTitle>
+
+<h3 class="asb-sec">Utility</h3>
+<p class="asb-sub">Fine-tuning, training data and the JsonL utility.</p>
+
+@* T1: temporary check that IFileExportService works in each host. Removed in T17. *@
+<RadzenButton ButtonStyle="ButtonStyle.Light" Icon="download" Text="Export test file" Click="ExportTestFileAsync" />
+
+@code {
+    async Task ExportTestFileAsync()
+    {
+        try
+        {
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes("AI StoryBuilders export test " + DateTime.Now));
+            if (await Export.SaveAsync("AIStoryBuildersExportTest.txt", stream, "text/plain"))
+                Notify.Notify(NotificationSeverity.Success, "Saved", "The file was saved successfully.", 4000);
+        }
+        catch (Exception ex)
+        {
+            Notify.Notify(NotificationSeverity.Error, "Error", ex.Message, 4000);
+        }
+    }
+}

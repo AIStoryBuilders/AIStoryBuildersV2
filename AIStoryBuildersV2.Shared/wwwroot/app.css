@@ -1,31 +1,114 @@
+/* AI StoryBuilders V2 styles. Tokens and layout come from Docs/Design (DESIGN.md and the artboards). */
+
+/* Fonts are vendored, never loaded from a CDN (plan §9). Inter ships with Radzen.Blazor (SIL OFL).
+   Newsreader is not vendored yet, so prose falls back to a local serif (plan §14, decided by implementer). */
+@font-face {
+  font-family: 'Inter';
+  src: url('../Radzen.Blazor/fonts/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --asb-accent: #5B4FD6;
+  --asb-accent-soft: #efecfb;
+  --asb-accent-line: #ddd6f6;
   --asb-ink: #1c1a27;
   --asb-muted: #6b6676;
+  --asb-paper: #fffdf9;
   --asb-bg: #edebf2;
   --asb-panel: #ffffff;
   --asb-line: #e4e1ec;
+  --asb-success: #1F7A46;
+  --asb-danger: #BE123C;
+  --asb-light: #ECEBF0;
+  --asb-warning: #B7791F;
+  --asb-info: #1C7CD6;
+  --asb-ai: #B45309;
+  --asb-dark: #2C2A36;
+  --asb-ui-font: 'Inter', system-ui, 'Segoe UI', sans-serif;
+  --asb-prose-font: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --asb-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* Radzen material theme overrides so buttons match the design palette. */
+  --rz-primary: var(--asb-accent);
+  --rz-primary-light: #7a70e0;
+  --rz-primary-lighter: var(--asb-accent-soft);
+  --rz-primary-dark: #4a3fc0;
+  --rz-success: var(--asb-success);
+  --rz-danger: var(--asb-danger);
+  --rz-warning: var(--asb-warning);
+  --rz-info: var(--asb-info);
+  --rz-text-font-family: var(--asb-ui-font);
+  --rz-body-font-size: 14px;
 }
 
+* { box-sizing: border-box; }
 html, body { height: 100%; }
-body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; color: var(--asb-ink); background: var(--asb-bg); }
+body { margin: 0; font-family: var(--asb-ui-font); color: var(--asb-ink); background: var(--asb-bg); }
+a { color: var(--asb-accent); }
 
-.asb-app { min-height: 100vh; display: flex; flex-direction: column; }
-.asb-header { height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 20px;
+.asb-app { min-height: 100vh; display: flex; flex-direction: column; background: var(--asb-bg); color: var(--asb-ink); font-family: var(--asb-ui-font); }
+.asb-ws-app { height: 100vh; min-height: 0; }
+
+/* ---------- top bar ---------- */
+.asb-topbar { flex: 0 0 auto; height: 60px; display: flex; align-items: center; gap: 12px; padding: 0 20px;
   background: var(--asb-panel); border-bottom: 1px solid var(--asb-line); }
-.asb-brand { font-weight: 700; letter-spacing: -0.01em; }
+.asb-brand { display: flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; color: inherit; }
+.asb-brand img { width: 34px; height: auto; display: block; flex: 0 0 auto; }
+.asb-ttl { display: flex; flex-direction: column; line-height: 1.12; min-width: 0; }
+.asb-ttl b { font-size: 15.5px; font-weight: 700; letter-spacing: -0.015em; white-space: nowrap; color: var(--asb-ink); }
+.asb-ttl span { font-size: 11px; color: var(--asb-muted); white-space: nowrap; }
 .asb-sp { flex: 1; }
-.asb-main { flex: 1; min-height: 0; padding: 24px; }
+
+/* ---------- main menu (RadzenMenu restyled as the artboard's .menu) ---------- */
+.asb-topbar ul.rz-menu.asb-menu { background: transparent; border: none; box-shadow: none; padding: 0; margin: 0; display: flex; gap: 2px;
+  --rz-menu-background-color: transparent; --rz-menu-item-color: var(--asb-ink); --rz-menu-item-hover-color: var(--asb-ink);
+  --rz-menu-item-hover-background-color: #f4f2fb; --rz-menu-item-icon-color: var(--asb-ink);
+  --rz-menu-top-item-color: var(--asb-ink); --rz-menu-top-item-hover-color: var(--asb-ink); --rz-menu-top-item-icon-color: currentColor; }
+.asb-topbar ul.asb-menu .rz-navigation-item, .asb-topbar ul.asb-menu .rz-navigation-item-wrapper { background: transparent; border: none; border-radius: 9px; }
+.asb-topbar ul.asb-menu .rz-navigation-item-link { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px;
+  font-size: 13.5px; font-weight: 500; color: var(--asb-ink); border-radius: 9px; background: transparent; }
+.asb-topbar ul.asb-menu .rz-navigation-item-link:hover { background: #f4f2fb; color: var(--asb-ink); }
+.asb-topbar ul.asb-menu .rz-navigation-item-link.active { background: var(--asb-accent-soft); color: var(--asb-accent); font-weight: 600; }
+.asb-topbar ul.asb-menu .rz-navigation-item-icon { font-size: 18px; color: inherit; margin: 0; }
+.asb-topbar ul.rz-menu.asb-menu .rz-navigation-item-link .rzi.rz-navigation-item-icon { color: inherit; }
+
+/* ---------- page body ---------- */
+.asb-page { flex: 1; min-height: 0; overflow-y: auto; padding: 26px 30px 70px; }
+.asb-wrap { max-width: 1040px; margin: 0 auto; }
+h3.asb-sec { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; color: var(--asb-ink); }
+.asb-sub { font-size: 13px; color: var(--asb-muted); margin: 0 0 20px; }
+.asb-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; align-items: center; }
 .asb-footer { padding: 12px 20px; border-top: 1px solid var(--asb-line); background: var(--asb-panel);
   font-size: 12px; color: var(--asb-muted); }
 .asb-footer a { color: var(--asb-muted); }
 
-.asb-home { max-width: 760px; margin: 0 auto; line-height: 1.55; }
-.asb-home h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: -0.01em; }
-.asb-home code { background: var(--asb-panel); border: 1px solid var(--asb-line); border-radius: 6px; padding: 1px 6px; }
-.asb-card { background: var(--asb-panel); border: 1px solid var(--asb-line); border-radius: 12px; padding: 16px 18px; margin: 14px 0; }
+/* Radzen buttons: the design's rounded, bold style. */
+.rz-button, .rz-button .rz-button-text { border-radius: 8px; font-weight: 600; text-transform: none; letter-spacing: 0; font-family: var(--asb-ui-font); }
+.rz-button.rz-light, .rz-button.rz-base.rz-variant-filled { background: var(--asb-light); color: #26222F; border: 1px solid #ddd9e4; }
+.rz-button.asb-ai { background: var(--asb-ai); color: #fff; }
+.rz-button.asb-dark { background: var(--asb-dark); color: #fff; }
+.asb-icon-btn.rz-button { width: 34px; height: 34px; min-width: 34px; padding: 0; border-radius: 8px;
+  border: 1px solid var(--asb-line); background: #fff; color: var(--asb-ink); box-shadow: none; }
+
+/* ---------- workspace top bar ---------- */
+.asb-ws-title { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.asb-ws-title b { font-family: var(--asb-prose-font); font-size: 19px; font-weight: 600; letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.asb-ws-title span { font-size: 11px; color: var(--asb-muted); }
+
+.mi { font-family: "Material Symbols"; font-weight: 400; font-style: normal; font-size: 18px; line-height: 1; width: 1em; height: 1em;
+  overflow: hidden; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; }
 
 #blazor-error-ui { display: none; position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px;
   background: #fdecea; color: #7d1a14; z-index: 1000; }
 #blazor-error-ui .reload { color: inherit; margin-left: 8px; }
 #blazor-error-ui .dismiss { cursor: pointer; float: right; }
+
+@media (max-width: 760px) {
+  .asb-topbar { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 8px; }
+  .asb-menu.rz-menu { order: 3; width: 100%; overflow-x: auto; }
+  .asb-page { padding: 20px 14px 60px; }
+}
