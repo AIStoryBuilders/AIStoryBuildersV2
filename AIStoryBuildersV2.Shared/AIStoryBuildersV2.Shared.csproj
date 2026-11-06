@@ -42,6 +42,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The Help page shows the user guide itself. Its screenshots stay in Docs/ and are served from
+         _content/AIStoryBuildersV2.Shared/images/user-guide/. ContentRoot lets the dev server find them there. -->
+    <EmbeddedResource Include="..\Docs\User-Guide.md" LogicalName="Help/User-Guide.md" />
+    <Content Include="..\Docs\images\user-guide\*.png" Link="wwwroot\images\user-guide\%(Filename)%(Extension)"
+             ContentRoot="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Docs\'))" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="AIStoryBuildersV2.Tests" />
   </ItemGroup>
 
