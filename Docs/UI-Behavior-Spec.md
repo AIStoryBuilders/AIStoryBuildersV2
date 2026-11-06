@@ -621,10 +621,12 @@ V1: [ChatControl.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/
 | Header "Story Chat Assistant" | `forum` icon | — | — | — | — | — |
 | Model dropdown | Verified models (§0.3) | not streaming | Sets the model for the next turns. It does **not** change the saved default (V1 changed it in memory). Kept for the session. | — | — | — |
 | Search knowledgebase **(plan)** | `RadzenCheckBox` next to the model | not streaming; disabled when the KB is empty, with the tooltip "This story's knowledge base is empty" **(plan)** | Sets `StoryChatRequest.SearchKnowledgeBase`. Default and persistence as in D16. | — | — | — |
-| Clear conversation | Icon button · `restart_alt` **(new icon; V1 uses the 🔄 emoji)**, title "Clear conversation" | not streaming, at least one message | Clear the bubbles; `IStoryChatService.ClearSession(title)` | — (V1 has none) | Empty state shows | — |
+| Clear conversation | Icon button · `restart_alt` **(new icon; V1 uses the 🔄 emoji)**, title "Clear conversation" | not streaming, at least one message or proposed change | Clear the bubbles and proposed changes; `IStoryChatService.ClearSession(title)` | — (V1 has none) | Empty state shows | — |
 | Input | `RadzenTextArea Rows=2`, placeholder "Ask about your story..." | disabled while streaming | Enter sends; Shift+Enter adds a newline (V1, Plan §5.6) | — | — | — |
 | Send | Primary · —, text "Send" | not streaming, the graph is not loading, input not blank | Add the user bubble, clear the input, stream `SendMessageAsync(new StoryChatRequest(title, text, model, kbChecked))`, appending chunks to the AI bubble | — | The AI bubble is final | Exception: an error bubble with "Error: {message}" (V1) and **Retry** **(plan)** |
 | Retry **(plan)** | Light · `refresh`, in the error bubble | not streaming | Remove the error bubble and send the same user text again (no second user bubble) **(new)** | — | — | Same as Send |
+| Apply **(new, SEC-001)** | Primary small · `check`, in a proposed-change card | not streaming, no other Apply running | `IStoryChatService.ApplyPendingAsync(title, id)` runs the change exactly as proposed | — (the card is the confirmation) | The card goes; an AI bubble "Applied: {summary}" | An AI bubble "Could not apply the change: {error}"; an unknown id gives "This change is no longer pending." |
+| Discard **(new, SEC-001)** | Light small · `close`, in a proposed-change card | not streaming, no Apply running | `DiscardPending(title, id)` | — | The card goes; an AI bubble "Discarded: {summary}" | — |
 
 | Item | Spec |
 |---|---|
@@ -633,7 +635,7 @@ V1: [ChatControl.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/
 | Graph loading | On tab activation (§9.4). Send is disabled meanwhile; show "Loading the story graph…" **(new)** under the header. |
 | Empty | "No messages yet. Ask a question about your story!" and, smaller, the V1 examples line: "Examples: "Are there any orphaned characters?", "Tell me about the main characters"" |
 | Service messages | Shown as AI bubbles exactly as yielded, for example the `GetClientAsync` reasons "Add an API key in Settings" and "Model '<m>' has not passed the capability check. Verify it in Settings." **(plan)** |
-| Graph mutations | V1 behavior: mutation tools run first with `confirmed=false`, the model shows the preview and asks; the change runs only after the user agrees in chat (T13). There is no separate dialog. After a confirmed mutation the entity tabs reload when next activated (§9.4). |
+| Graph mutations | **Changed from V1 (SEC-001, plan Q17):** the mutation tools have no `confirmed` parameter, so the model can only propose. Each proposal shows after the bubbles as a dashed card, labelled "Proposed change · {tool}", with the preview summary, a collapsed **Details** list of the exact arguments, and **Apply**/**Discard**. Nothing is written until Apply. The model learns what the user chose at the start of the next turn. Cards survive tab switches and are dropped with the conversation (Clear conversation, Close workspace). After an applied mutation the entity tabs reload when next activated (§9.4). |
 | History | Kept while the workspace is open; cleared on Close workspace (§9.1) |
 | Keyboard | Enter sends, Shift+Enter newline |
 

@@ -139,4 +139,31 @@ public class SafeMarkdownTests
         Assert.DoesNotContain("<a ", html);
         Assert.Contains("[[Welcome]]", html);
     }
+
+    /// <summary>SEC-002: Preview makes only http, https and mailto clickable; script and data URLs render inert.</summary>
+    [Theory]
+    [InlineData("[x](javascript://%0aalert(1))")]
+    [InlineData("<javascript:alert(1)>")]
+    [InlineData("<vbscript:msgbox(1)>")]
+    [InlineData("<data:text/html,hi>")]
+    [InlineData("[x]( JAVASCRIPT://%0aalert(1))")]
+    [InlineData("[x](file:///C:/Windows/win.ini)")]
+    public void ForPreview_NeverEmitsScriptUrls(string markdown)
+    {
+        var html = SafeMarkdown.ForPreview(markdown, L, Resolve);
+
+        Assert.DoesNotContain("href=\"javascript", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("href=\"vbscript", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("href=\"data", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("href=\"file", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ext-link", html);
+    }
+
+    [Theory]
+    [InlineData("<https://example.com>", "https://example.com")]
+    [InlineData("[mail](mailto:someone@example.com)", "mailto:someone@example.com")]
+    [InlineData("<someone@example.com>", "mailto:someone@example.com")]
+    [InlineData("[site](http://example.com/a?b=c)", "http://example.com/a?b=c")]
+    public void ForPreview_KeepsSafeLinksClickable(string markdown, string href) =>
+        Assert.Contains("href=\"" + href + "\"", SafeMarkdown.ForPreview(markdown, L, Resolve));
 }

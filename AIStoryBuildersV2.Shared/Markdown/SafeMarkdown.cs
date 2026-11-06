@@ -43,9 +43,15 @@ public static class SafeMarkdown
 
     static string E(string s) => WebUtility.HtmlEncode(s);
 
+    static readonly HashSet<string> ClickableSchemes = new(StringComparer.OrdinalIgnoreCase) { "http", "https", "mailto" };
+
+    /// <summary>Only http, https and mailto become anchors (SEC-002). Uri parsing also catches "javascript://…".</summary>
+    internal static bool IsSafeExternalUrl(string url) =>
+        Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri) && ClickableSchemes.Contains(uri.Scheme);
+
     static void WriteExternal(HtmlRenderer r, string text, string url, Options o)
     {
-        if (o.Chat)
+        if (o.Chat || !IsSafeExternalUrl(url))
         {
             // Inert: no href, URL visible.
             r.Write("<span class=\"ext\" title=\"External link (not clickable)\">")

@@ -100,8 +100,9 @@ public partial class AIStoryBuildersService
         var written = false;
         try
         {
+            var limits = _host.IsBrowser ? ZipLimits.BrowserStory : ZipLimits.Story;
             using var archive = new ZipArchive(new MemoryStream(stybldFile), ZipArchiveMode.Read);
-            var entries = SafeZip.ValidatedEntries(archive);
+            var entries = SafeZip.ValidatedEntries(archive, limits);
 
             var manifestEntry = entries.FirstOrDefault(e => e.Path.Equals(ManifestFileName, StringComparison.OrdinalIgnoreCase)).Entry;
             if (manifestEntry is null) return ImportMessages.Incompatible;
@@ -121,7 +122,7 @@ public partial class AIStoryBuildersService
             if (Directory.Exists(folder)) await ForceDeleteDirectoryAsync(folder);
             Directory.CreateDirectory(folder);
             written = true;
-            SafeZip.ExtractTo(entries, folder, path => path.Equals(ManifestFileName, StringComparison.OrdinalIgnoreCase));
+            SafeZip.ExtractTo(entries, folder, limits, path => path.Equals(ManifestFileName, StringComparison.OrdinalIgnoreCase));
 
             await _library.UpsertAsync(new StoryIndexEntry("0", title, StoryFormat.CleanField(manifest.Style), StoryFormat.CleanField(manifest.Theme),
                 StoryFormat.CleanField(manifest.Synopsis), StoryFormat.CleanField(manifest.WorldFacts), DateTimeOffset.UtcNow));

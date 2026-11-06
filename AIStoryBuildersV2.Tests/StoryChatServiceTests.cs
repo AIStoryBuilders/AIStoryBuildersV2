@@ -123,4 +123,112 @@ public class StoryChatServiceTests : IDisposable
 
         Assert.Single(_chat.Requests[1], m => m.Role == ChatRole.User);
     }
+
+    List<string> Tree() =>
+        Directory.GetFiles(_f.StoryDir, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal)
+            .Select(f => f + "|" + File.ReadAllText(f)).ToList();
+
+    int ChapterCount() => Directory.GetDirectories(Path.Combine(_f.StoryDir, "Chapters")).Length;
+
+    /// <summary>The injected call from SEC-001: the model sets confirmed=true itself.</summary>
+    async Task<StoryChatService> ProposeDeleteChapterAsync()
+    {
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c1", "DeleteChapter", ("chapterNumber", 1), ("confirmed", true)))
+             .EnqueueText("Done.");
+        var chat = Create();
+        await _f.Service.EnsureGraphExistsAsync(FixtureFactory.Title);
+        _f.Persistence.Dirty.Clear();
+        await SendAsync(chat, Ask("Summarize chapter 1"));
+        return chat;
+    }
+
+    [Fact]
+    public async Task No_mutation_tool_lets_the_model_confirm_its_own_change()
+    {
+        _chat.EnqueueText("ok");
+        var chat = Create();
+        await SendAsync(chat, Ask("hi"));
+
+        var tools = _chat.Options[0]!.Tools!.OfType<AIFunction>().ToList();
+        Assert.Contains(tools, t => t.Name == "DeleteChapter");
+        Assert.All(tools, t => Assert.DoesNotContain("confirmed", t.JsonSchema.GetRawText(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task A_model_that_passes_confirmed_true_only_creates_a_proposal()
+    {
+        await _f.Service.EnsureGraphExistsAsync(FixtureFactory.Title);
+        var before = Tree();
+        var chapters = ChapterCount();
+
+        var chat = await ProposeDeleteChapterAsync();
+
+        Assert.Equal(before, Tree());
+        Assert.Equal(chapters, ChapterCount());
+        Assert.Empty(_f.Persistence.Dirty);
+        var pending = Assert.Single(chat.PendingChanges(FixtureFactory.Title));
+        Assert.Equal("DeleteChapter", pending.ToolName);
+        Assert.Contains(pending.Arguments, a => a.Key == "chapterNumber" && a.Value == "1");
+        Assert.DoesNotContain(pending.Arguments, a => a.Key == "confirmed");
+        var toolResult = _chat.Requests[1].SelectMany(m => m.Contents).OfType<FunctionResultContent>().Single();
+        Assert.Contains(pending.Id, toolResult.Result?.ToString());
+    }
+
+    [Fact]
+    public async Task Apply_runs_the_proposal_once_and_marks_the_story_dirty()
+    {
+        var chapters = ChapterCount();
+        var chat = await ProposeDeleteChapterAsync();
+        var id = chat.PendingChanges(FixtureFactory.Title).Single().Id;
+
+        var result = await chat.ApplyPendingAsync(FixtureFactory.Title, id);
+
+        Assert.True(result?.Success);
+        Assert.Equal(chapters - 1, ChapterCount());
+        Assert.Contains(FixtureFactory.Title, _f.Persistence.Dirty);
+        Assert.Empty(chat.PendingChanges(FixtureFactory.Title));
+        Assert.Null(await chat.ApplyPendingAsync(FixtureFactory.Title, id));
+        Assert.Equal(chapters - 1, ChapterCount());
+        Assert.Null(StoryGraphContext.Current);
+    }
+
+    [Fact]
+    public async Task A_proposal_cannot_be_applied_through_another_story()
+    {
+        var chapters = ChapterCount();
+        var chat = await ProposeDeleteChapterAsync();
+        var id = chat.PendingChanges(FixtureFactory.Title).Single().Id;
+
+        Assert.Null(await chat.ApplyPendingAsync("Another Story", id));
+        Assert.False(chat.DiscardPending("Another Story", id));
+
+        Assert.Equal(chapters, ChapterCount());
+        Assert.Single(chat.PendingChanges(FixtureFactory.Title));
+    }
+
+    [Fact]
+    public async Task Discard_drops_the_proposal_and_tells_the_model_next_turn()
+    {
+        var chapters = ChapterCount();
+        var chat = await ProposeDeleteChapterAsync();
+        var id = chat.PendingChanges(FixtureFactory.Title).Single().Id;
+
+        Assert.True(chat.DiscardPending(FixtureFactory.Title, id));
+        Assert.Empty(chat.PendingChanges(FixtureFactory.Title));
+        _chat.EnqueueText("Understood.");
+        await SendAsync(chat, Ask("OK"));
+
+        Assert.Equal(chapters, ChapterCount());
+        Assert.Contains("discarded the proposed change", _chat.Requests[^1].Last(m => m.Role == ChatRole.User).Text);
+    }
+
+    [Fact]
+    public async Task ClearSession_discards_pending_proposals()
+    {
+        var chat = await ProposeDeleteChapterAsync();
+
+        chat.ClearSession(FixtureFactory.Title);
+
+        Assert.Empty(chat.PendingChanges(FixtureFactory.Title));
+    }
 }

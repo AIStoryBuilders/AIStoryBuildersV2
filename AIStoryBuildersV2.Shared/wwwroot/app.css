@@ -331,6 +331,11 @@ h3.asb-ws-sec { font-size: 18px; font-weight: 700; margin: 0 0 16px; color: var(
 .asb-user-text { white-space: pre-wrap; }
 .asb-b-ai { align-self: flex-start; background: #f2f0fa; color: var(--asb-ink); border: 1px solid var(--asb-line); border-bottom-left-radius: 4px; }
 .asb-b-error { background: #fdecea; border-color: #f3c7c1; color: #7d1a14; }
+.asb-b-proposal { border-style: dashed; border-color: var(--asb-accent); background: #fff; }
+.asb-proposal-args { margin-top: 6px; font-size: 12.5px; }
+.asb-proposal-args dl { margin: 6px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; }
+.asb-proposal-args dt { color: var(--asb-muted); }
+.asb-proposal-args dd { margin: 0; white-space: pre-wrap; word-break: break-word; }
 .asb-chat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--asb-line); }
 .asb-chat-input textarea { flex: 1; font: inherit; font-size: 13.5px; padding: 10px 12px; border: 1px solid var(--asb-line); border-radius: 9px; resize: none; min-height: 48px; }
 .asb-chat-input textarea:focus { outline: 2px solid var(--asb-accent-soft); border-color: var(--asb-accent); }

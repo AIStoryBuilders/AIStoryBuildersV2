@@ -102,11 +102,13 @@ public sealed class ZipStoryPersistence : IStoryPersistence
         try
         {
             using var archive = new ZipArchive(new MemoryStream(Convert.FromBase64String(base64)), ZipArchiveMode.Read);
-            files = SafeZip.ValidatedEntries(archive).Select(e =>
+            var limits = ZipLimits.BrowserStory;
+            long total = 0;
+            files = SafeZip.ValidatedEntries(archive, limits).Select(e =>
             {
                 using var source = e.Entry.Open();
                 using var buffer = new MemoryStream();
-                source.CopyTo(buffer);
+                total += SafeZip.CopyBounded(source, buffer, limits.MaxEntryBytes, limits.MaxTotalBytes - total);
                 return (e.Path, buffer.ToArray());
             }).ToList();
         }

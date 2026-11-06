@@ -1,6 +1,8 @@
 #nullable disable
 using AIStoryBuildersV2.Shared.AI;
 using AIStoryBuildersV2.Shared.Models;
+using AIStoryBuildersV2.Shared.Stories.Storage;
+using System.IO.Compression;
 using Xceed.Words.NET;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -490,8 +492,16 @@ public class ManuscriptParsingService
     //  Text Extraction
     // ═══════════════════════════════════════════════════════
 
+    /// <summary>More pages than any manuscript has; PdfPig keeps every page in memory (SEC-005).</summary>
+    internal const int MaxPdfPages = 2_000;
+
     private static string ExtractDocx(Stream stream)
     {
+        // SEC-005: a .docx is a zip. Refuse one that inflates past the limits before DocX loads it.
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
+            SafeZip.CheckLimits(archive, ZipLimits.Docx);
+        stream.Position = 0;
+
         using var doc = DocX.Load(stream);
         var sb = new StringBuilder();
         foreach (var para in doc.Paragraphs) sb.AppendLine(para.Text);
@@ -501,6 +511,7 @@ public class ManuscriptParsingService
     private static string ExtractPdf(Stream stream)
     {
         using var document = PdfDocument.Open(stream);
+        if (document.NumberOfPages > MaxPdfPages) throw new InvalidDataException(SafeZip.TooLargeMessage);
         var sb = new StringBuilder();
         foreach (var page in document.GetPages()) sb.AppendLine(page.Text);
         return sb.ToString();

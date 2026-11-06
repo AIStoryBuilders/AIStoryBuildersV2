@@ -21,7 +21,7 @@
         </span>
         <span class="asb-sp"></span>
         <button class="asb-icon-btn-plain" title="Clear conversation" aria-label="Clear conversation"
-                disabled="@(streaming || Bubbles.Count == 0)" @onclick="Clear">
+                disabled="@(streaming || (Bubbles.Count == 0 && pending.Count == 0))" @onclick="Clear">
             <span class="mi" aria-hidden="true">restart_alt</span>
         </button>
     </div>
@@ -68,6 +68,33 @@
                 </div>
             }
         }
+        @foreach (var p in pending)
+        {
+            @* SEC-001: the model only proposes; nothing is written until the user clicks Apply. *@
+            <div class="asb-bubble asb-b-ai asb-b-proposal" role="group" aria-label="Proposed change">
+                <small>Proposed change · @p.ToolName</small>
+                <div>@p.Preview.Summary</div>
+                @if (p.Arguments.Count > 0)
+                {
+                    <details class="asb-proposal-args">
+                        <summary>Details</summary>
+                        <dl>
+                            @foreach (var a in p.Arguments)
+                            {
+                                <dt>@a.Key</dt>
+                                <dd>@(a.Value.Length > 0 ? a.Value : "(none)")</dd>
+                            }
+                        </dl>
+                    </details>
+                }
+                <div class="asb-mt row">
+                    <RadzenButton Text="Apply" Icon="check" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Disabled="@(streaming || applying)" Click="@(() => ApplyAsync(p))" />
+                    <RadzenButton Text="Discard" Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                  Disabled="@(streaming || applying)" Click="@(() => Discard(p))" />
+                </div>
+            </div>
+        }
     </div>
     <div class="asb-chat-input">
         <textarea id="asb-chat-composer" rows="2" placeholder="Ask about your story..." @bind="input" @bind:event="oninput"
@@ -94,6 +121,8 @@
     bool loadingGraph = true;
     bool kbEmpty = true;
     bool searchKb;
+    bool applying;
+    IReadOnlyList<PendingMutation> pending = [];
     readonly CancellationTokenSource cts = new();
     DotNetObjectReference<StoryChatTab>? selfRef;
     int scrolledTo;
@@ -102,6 +131,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        pending = Chat.PendingChanges(Story.Title);
         (kbEmpty, searchKb) = await Choice.DefaultAsync(Story.Title, KnowledgeSearchChoice.Chat);
         // Build the KB graph now so citations in answers resolve.
         if (CurKb.Current is { } kb && !kbEmpty)
@@ -127,7 +157,7 @@
             selfRef = DotNetObjectReference.Create(this);
             await Js.BindComposerAsync("asb-chat-composer", selfRef);
         }
-        var signature = Bubbles.Count == 0 ? 0 : Bubbles.Count * 31 + Bubbles[^1].Text.Length;
+        var signature = Bubbles.Count == 0 ? 0 : Bubbles.Count * 31 + Bubbles[^1].Text.Length + pending.Count * 7;
         if (signature != scrolledTo && Bubbles.Count > 0)
         {
             scrolledTo = signature;
@@ -198,14 +228,40 @@
         finally
         {
             streaming = false;
+            pending = Chat.PendingChanges(Story.Title);
         }
         StateHasChanged();
+    }
+
+    async Task ApplyAsync(PendingMutation p)
+    {
+        if (streaming || applying) return;
+        applying = true;
+        try
+        {
+            var result = await Chat.ApplyPendingAsync(Story.Title, p.Id);
+            if (result is null) Bubbles.Add(new ChatBubble { Text = "This change is no longer pending." });
+            else if (result.Success) Bubbles.Add(new ChatBubble { Text = "Applied: " + p.Preview.Summary });
+            else Bubbles.Add(new ChatBubble { Text = $"Could not apply the change: {result.Error}" });
+        }
+        finally
+        {
+            applying = false;
+            pending = Chat.PendingChanges(Story.Title);
+        }
+    }
+
+    void Discard(PendingMutation p)
+    {
+        if (Chat.DiscardPending(Story.Title, p.Id)) Bubbles.Add(new ChatBubble { Text = "Discarded: " + p.Preview.Summary });
+        pending = Chat.PendingChanges(Story.Title);
     }
 
     void Clear()
     {
         Bubbles.Clear();
         Chat.ClearSession(Story.Title);
+        pending = [];
     }
 
     public void Dispose()
