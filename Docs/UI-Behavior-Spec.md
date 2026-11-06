@@ -50,6 +50,7 @@
 |---|---|---|
 | `/` | Library | D20 |
 | `/logs`, `/settings` | Logs, Settings (`/utility` was removed with fine-tuning, D23) | D20 |
+| `/help` | Help: the user guide (§7a) **(new, Plan Q18)** | — |
 | `/story/{title}?tab=<tab>&p=<kbPath>` | Story Workspace. `title` is `Uri.EscapeDataString`. | D20, D29 |
 
 `tab` values: `details`, `timelines`, `locations`, `characters`, `chapters`, `chat` **(new)**, and `kb` (D13). A missing or unknown `tab` means `chapters` (Plan §5.6). Changing tabs updates the URL with `replace: true` **(new)**. `p` is read only when `tab=kb`. `&create=1` (from `KbLinkBuilder.CreateHref`) creates the page instead of opening it (§17.5).
@@ -65,9 +66,10 @@ Layout: [Library.dc.html](Design/Library.dc.html) top bar. Logo, wordmark "AI St
 | Home | `RadzenMenuItem` · `home` | always | navigate `/` | — | Item shows the selected state | — |
 | Logs | menu · `assignment` | always | navigate `/logs` | — | selected state | — |
 | Settings | menu · `line_style` | always | navigate `/settings` | — | selected state | — |
+| Help **(new, Plan Q18)** | menu · `help_outline` | always | navigate `/help` | — | selected state | — |
 
 - Icons are V1's ([Index.razor:20-32](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Index.razor)).
-- V1 hides Home, Logs and Utility until a key is set. V2 always shows Home, Logs and Settings (Plan §5.6); V1's Utility is removed (D23). **First run:** when `Settings.GetAsync()` returns `ApiKeyConfigured == false` for a provider that needs a key, the first navigation to `/` redirects to `/settings` once per app start (Plan §5.4 "The first run starts at Settings").
+- V1 hides Home, Logs and Utility until a key is set. V2 always shows Home, Logs, Settings and Help (Plan §5.6, Q18); V1's Utility is removed (D23). **First run:** when `Settings.GetAsync()` returns `ApiKeyConfigured == false` for a provider that needs a key, the first navigation to `/` redirects to `/settings` once per app start (Plan §5.4 "The first run starts at Settings").
 - The menu is hidden inside `/story/*`, which has its own top bar ([StoryWorkspace.dc.html](Design/StoryWorkspace.dc.html)).
 
 ---
@@ -250,6 +252,23 @@ V1: [Logs.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Logs.ra
 | Date column **(new)** | V1 lines have no date. V2's `LogService.WriteToLog` writes `"{yyyy-MM-dd HH:mm:ss} {text}"` (invariant culture, still one text line, so V1 can read it). The grid shows the leading timestamp in **Date** when a line matches `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} `, and "—" otherwise. |
 | Empty **(new)** | "The log is empty." |
 | Loading | Indeterminate bar |
+
+---
+
+## 7a. Help (`/help`) **(new, Plan Q18)**
+
+V1 has no Help page; it links to its GitHub wiki. V2 shows [User-Guide.md](User-Guide.md) inside the app, so the page and the guide never drift apart.
+
+| Item | Spec |
+|---|---|
+| Content | `Docs/User-Guide.md` is embedded in the Shared library (`Help/User-Guide.md`) and rendered by `HelpMarkdown` with Markdig: pipe tables, emphasis extras, GitHub-style heading ids. Raw HTML is disabled. |
+| Contents list | A sticky list of the guide's level-2 headings, left of the guide. Hidden below 900 px. |
+| Anchors | Heading ids match GitHub's (`help#1-connect-an-ai-provider`). In-page links `#id` are written as `help#id`, because `<base href="/">` would send a bare `#id` to the library. |
+| Images | Only `images/user-guide/<file>` images are shown, from `_content/AIStoryBuildersV2.Shared/images/user-guide/<file>`, lazy-loaded. The Shared project links `Docs/images/user-guide/*.png` in as static assets with `Docs/` as their content root, so there is one copy. Other images show their alt text. |
+| Diagram | No Mermaid script ships (D18). A `mermaid` flowchart is shown as one row per arrow: "*from* → *to*". |
+| Links | `http`/`https`/`mailto` links open in a new tab; any other link shows its text only. |
+
+Keep the guide's headings stable: the Help contents list and any `help#…` link depend on them. Change the guide, not the page.
 
 ---
 
