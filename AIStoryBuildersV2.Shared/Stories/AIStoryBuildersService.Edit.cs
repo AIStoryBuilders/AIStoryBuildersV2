@@ -167,9 +167,18 @@ public partial class AIStoryBuildersService
         }
         foreach (var dir in Directory.EnumerateDirectories(path, "*", SearchOption.AllDirectories).OrderByDescending(d => d.Length).ToList())
         {
+            ClearReadOnly(dir);
             await RetryDeleteAsync(() => Directory.Delete(dir, false));
         }
+        ClearReadOnly(path);
         await RetryDeleteAsync(() => Directory.Delete(path, false));
+    }
+
+    /// <summary>OneDrive can mark folders read-only, and Directory.Delete refuses those with access denied.</summary>
+    private static void ClearReadOnly(string dir)
+    {
+        var info = new DirectoryInfo(dir);
+        if (info.Attributes.HasFlag(FileAttributes.ReadOnly)) info.Attributes &= ~FileAttributes.ReadOnly;
     }
 
     private static async Task RetryDeleteAsync(Action deleteAction, int maxRetries = 5)

@@ -36,7 +36,7 @@
                 else
                 {
                     <div class="row">
-                        @if (!current.ApiKeyConfigured) { <span class="bdg b-ne"><span class="mi" aria-hidden="true">key_off</span>Not set</span> }
+                        @if (!current.ApiKeyConfigured || provider != current.Provider) { <span class="bdg b-ne"><span class="mi" aria-hidden="true">key_off</span>Not set</span> }
                         <RadzenPassword id="asb-key" Value="@newKey" @oninput="@(e => { newKey = e.Value?.ToString() ?? ""; ScheduleModelLoad(); })" Style="flex:1" AutoComplete="false" Placeholder="Paste the key" />
                         @if (replacing) { <RadzenButton Text="Cancel" Size="ButtonSize.Small" Variant="Variant.Text" Click="@(() => { replacing = false; newKey = ""; ScheduleModelLoad(); })" /> }
                     </div>
@@ -295,6 +295,8 @@
         if (value == provider) return;
         model = value == current?.Provider ? current.Model : LlmDefaults.DefaultModel(value);
         provider = value;
+        newKey = "";   // a key typed for another provider must never be saved for this one
+        replacing = false;
         error = null;
         testResult = null;
         showValidation = false;

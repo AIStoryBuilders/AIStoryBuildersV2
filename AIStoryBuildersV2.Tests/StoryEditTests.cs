@@ -132,6 +132,19 @@ public class StoryEditTests : IDisposable
     }
 
     [Fact]
+    public async Task Delete_story_removes_read_only_folders()
+    {
+        // OneDrive can mark story folders read-only; Directory.Delete then fails with access denied.
+        var chapter = new DirectoryInfo(Path.Combine(_f.StoryDir, "Chapters", "Chapter1"));
+        chapter.Attributes |= FileAttributes.ReadOnly;
+        new DirectoryInfo(_f.StoryDir).Attributes |= FileAttributes.ReadOnly;
+
+        await _f.Service.DeleteStoryAsync(FixtureFactory.Title);
+
+        Assert.False(Directory.Exists(_f.StoryDir));
+    }
+
+    [Fact]
     public async Task Write_new_story_creates_v1_files()
     {
         var story = new Story { Title = "Saltwater Saints", Style = "Drama", Theme = "Theme", Synopsis = "Syn", WorldFacts = "" };

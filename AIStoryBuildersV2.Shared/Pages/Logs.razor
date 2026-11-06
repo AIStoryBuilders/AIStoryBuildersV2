@@ -32,7 +32,12 @@ else
 }
 
 @code {
-    sealed record Row(string Date, string Entry);
+    // A class, not a record: the grid keys rows by item, and the log can hold identical lines.
+    sealed class Row(string date, string entry)
+    {
+        public string Date { get; } = date;
+        public string Entry { get; } = entry;
+    }
 
     List<Row> rows = [];
 

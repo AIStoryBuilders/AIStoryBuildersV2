@@ -213,20 +213,21 @@ else
     async Task ImportStoryAsync(InputFileChangeEventArgs e)
     {
         var file = e.File;
-        importKey++;
         if (file.Size > StoryStorageConstants.MaxStybldImportBytes)
         {
+            importKey++;
             Notify.Notify(NotificationSeverity.Error, "Error", $"The file is larger than {StoryStorageConstants.MaxStybldImportBytes / 1024 / 1024} MB.", 4000);
             return;
         }
 
         busy = true;
-        StateHasChanged();
         try
         {
-            var before = (await Index.ListAsync()).Select(x => x.Title).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            // Read the file before re-rendering: a new importKey replaces the InputFile its stream reads through.
             using var buffer = new MemoryStream();
             await file.OpenReadStream(StoryStorageConstants.MaxStybldImportBytes).CopyToAsync(buffer);
+            StateHasChanged();
+            var before = (await Index.ListAsync()).Select(x => x.Title).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var message = await Svc.ImportProjectAsync(buffer.ToArray());
 
             var added = (await Index.ListAsync()).Select(x => x.Title).FirstOrDefault(t => !before.Contains(t));
@@ -244,6 +245,7 @@ else
         finally
         {
             busy = false;
+            importKey++;   // a fresh InputFile so the same file can be picked again
             await LoadAsync();
         }
     }

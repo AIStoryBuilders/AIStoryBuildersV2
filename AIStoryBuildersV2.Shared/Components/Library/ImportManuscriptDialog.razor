@@ -42,13 +42,27 @@ else
             return;
         }
 
+        // Read the file before re-rendering: the busy view removes the InputFile, and its stream reads through it.
+        using var stream = new MemoryStream();
+        try
+        {
+            await file.OpenReadStream(StoryStorageConstants.MaxManuscriptImportBytes).CopyToAsync(stream);
+            stream.Position = 0;
+        }
+        catch (Exception ex)
+        {
+            Notify.Notify(NotificationSeverity.Error, "Import Error", ex.Message, 4000);
+            Log.WriteToLog("ImportManuscript: " + ex.Message);
+            pickerKey++;
+            return;
+        }
+
         busy = true;
         progress = 0;
         status = "Starting import...";
         StateHasChanged();
         try
         {
-            using var stream = file.OpenReadStream(StoryStorageConstants.MaxManuscriptImportBytes);
             var story = await Parser.ParseManuscriptAsync(stream, file.Name,
                 new Progress<int>(p => { progress = p; InvokeAsync(StateHasChanged); }),
                 new Progress<string>(s => { status = s; InvokeAsync(StateHasChanged); }));
