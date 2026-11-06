@@ -40,6 +40,13 @@ public partial class OrchestratorMethods
 
         // Build prompt messages
         var promptService = new PromptTemplateService();
+        var currentChapterMetadata = objJSONMasterStory.CurrentChapter is null
+            ? null
+            : new
+            {
+                objJSONMasterStory.CurrentChapter.chapter_name,
+                objJSONMasterStory.CurrentChapter.chapter_synopsis
+            };
         var messages = promptService.BuildMessages(
             PromptTemplateService.Templates.WriteParagraph_System,
             PromptTemplateService.Templates.WriteParagraph_User,
@@ -51,7 +58,7 @@ public partial class OrchestratorMethods
                 ["SystemMessage"] = objJSONMasterStory.SystemMessage ?? "",
                 ["WorldFacts"] = System.Text.Json.JsonSerializer.Serialize(objJSONMasterStory.WorldFacts ?? new List<string>()),
                 ["TimelineSummary"] = objJSONMasterStory.TimelineSummary ?? "",
-                ["CurrentChapter"] = System.Text.Json.JsonSerializer.Serialize(objJSONMasterStory.CurrentChapter),
+                ["CurrentChapter"] = System.Text.Json.JsonSerializer.Serialize(currentChapterMetadata),
                 ["PreviousParagraphs"] = System.Text.Json.JsonSerializer.Serialize(
                     objJSONMasterStory.PreviousParagraphs?.Select(p => new { p.sequence, p.contents, p.location_name, p.timeline_name, p.character_names }) ?? Enumerable.Empty<object>()),
                 ["CurrentLocation"] = System.Text.Json.JsonSerializer.Serialize(objJSONMasterStory.CurrentLocation),

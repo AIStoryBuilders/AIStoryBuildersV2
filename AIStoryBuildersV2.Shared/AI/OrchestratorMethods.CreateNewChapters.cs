@@ -38,7 +38,7 @@ public partial class OrchestratorMethods
 
         var response = await api.GetResponseAsync(messages, options);
 
-        LogService.WriteToLog($"TotalTokens: {response.Usage?.TotalTokenCount} - ChatResponseResult - {response.Text}");
+        LogService.WriteToLog($"TotalTokens: {response.Usage?.TotalTokenCount} - ChatResponseResult");
 
         return response;
     }
