@@ -278,7 +278,8 @@
         {
             var paragraph = Working();
             var prompt = new AIPrompt { AIPromptText = promptText, NumberOfWords = numberOfWords, ModelId = model, SearchKnowledgeBase = searchKb && !kbEmpty };
-            Ai.RememberKnowledgeBaseChoice(Story.Title, searchKb);
+            // An empty KB forces the box off; that is not the user's choice (D16).
+            if (!kbEmpty) Ai.RememberKnowledgeBaseChoice(Story.Title, searchKb);
             var result = await Ai.GenerateAsync(Story, Chapter, paragraph, storyCharacters, prompt, warning =>
                 Notify.Notify(NotificationSeverity.Warning, "Knowledge base", warning, 6000));
             undoCache = text;

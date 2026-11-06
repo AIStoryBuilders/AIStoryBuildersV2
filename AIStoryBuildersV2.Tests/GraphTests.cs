@@ -52,6 +52,20 @@ public class GraphTests : IDisposable
     }
 
     [Fact]
+    public async Task Reload_with_a_progress_dialog_raises_no_step_toasts()
+    {
+        var story = (await _f.Service.GetStorysAsync()).Single();
+        var toasts = new List<string>();
+        _f.Service.TextEvent += (_, e) => toasts.Add(e.Message);
+
+        await _f.Service.ReloadStoryAsync(story, new Progress<string>(_ => { }));
+        Assert.Empty(toasts);
+
+        await _f.Service.ReloadStoryAsync(story);
+        Assert.Contains("Reloading story data…", toasts);
+    }
+
+    [Fact]
     public async Task EnsureGraphExists_builds_once_then_loads_from_disk_and_rebuilds_when_dirty()
     {
         await _f.Service.EnsureGraphExistsAsync(FixtureFactory.Title);

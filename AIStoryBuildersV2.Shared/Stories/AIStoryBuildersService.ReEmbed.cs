@@ -17,13 +17,13 @@ public partial class AIStoryBuildersService
         try
         {
             progress?.Report("Step 1/5: Saving all story files…");
-            RaiseText("Saving story metadata…", 2);
+            StepText(progress, "Saving story metadata…", 2);
             await SaveStoryRowAsync(story);
 
             await ReEmbedFilesAsync(story, progress);
 
             progress?.Report("Step 4/5: Rebuilding Knowledge Graph…");
-            RaiseText("Rebuilding Knowledge Graph…", 3);
+            StepText(progress, "Rebuilding Knowledge Graph…", 3);
             var fullStory = await LoadFullStoryAsync(new Story { Title = story.Title });
             var graph = _graphBuilder.Build(fullStory);
             await PersistGraphAsync(fullStory, graph, StoryPath(story.Title));
@@ -33,14 +33,14 @@ public partial class AIStoryBuildersService
             entry.IsDirty = false;
 
             progress?.Report("Step 5/5: Reloading story data…");
-            RaiseText("Reloading story data…", 2);
+            StepText(progress, "Reloading story data…", 2);
             story.Character = fullStory.Character;
             story.Location = fullStory.Location;
             story.Timeline = fullStory.Timeline;
             story.Chapter = fullStory.Chapter;
 
             progress?.Report("Re-load complete!");
-            RaiseText("Re-load complete — all embeddings regenerated, Knowledge Graph rebuilt.", 5);
+            StepText(progress, "Re-load complete — all embeddings regenerated, Knowledge Graph rebuilt.", 5);
         }
         finally
         {
@@ -62,6 +62,12 @@ public partial class AIStoryBuildersService
         }
     }
 
+    // V1 toasted every Re-load step. V2 shows them only in the progress dialog when there is one (UI spec §10.2).
+    private void StepText(IProgress<string> progress, string text, int displayLength)
+    {
+        if (progress is null) RaiseText(text, displayLength);
+    }
+
     private async Task ReEmbedFilesAsync(Story story, IProgress<string> progress)
     {
         var meta = new Story { Title = story.Title };
@@ -73,7 +79,7 @@ public partial class AIStoryBuildersService
         foreach (var file in paragraphFiles)
         {
             processed++;
-            RaiseText($"Re-embedding paragraph {processed}/{paragraphFiles.Count}…", 1);
+            StepText(progress, $"Re-embedding paragraph {processed}/{paragraphFiles.Count}…", 1);
             var record = StoryFormat.ParseParagraph(File.ReadAllText(file));
             if (record is null || string.IsNullOrWhiteSpace(record.Content)) continue;
             var content = record.Content.Replace("|", "");
@@ -84,17 +90,17 @@ public partial class AIStoryBuildersService
         progress?.Report("Step 3/5: Re-embedding chapters, characters, locations…");
         foreach (var chapter in chapters)
         {
-            RaiseText("Re-embedding chapter…", 1);
+            StepText(progress, "Re-embedding chapter…", 1);
             await WriteChapterFileAsync(story.Title, ChapterFolderName(chapter), string.IsNullOrEmpty(chapter.Synopsis) ? " " : chapter.Synopsis);
         }
         foreach (var character in GetCharacters(meta))
         {
-            RaiseText("Re-embedding character…", 1);
+            StepText(progress, "Re-embedding character…", 1);
             await WriteCharacterFileAsync(story.Title, character.CharacterName, character.CharacterBackground);
         }
         foreach (var location in GetLocations(meta))
         {
-            RaiseText("Re-embedding location…", 1);
+            StepText(progress, "Re-embedding location…", 1);
             await WriteLocationFileAsync(story.Title, location.LocationName, location.LocationDescription);
         }
     }
