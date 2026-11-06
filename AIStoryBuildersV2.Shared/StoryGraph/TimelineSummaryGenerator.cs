@@ -15,6 +15,7 @@ public class TimelineSummaryGenerator : ITimelineSummaryGenerator
 {
     private const int MaxWords = 800;
     private const string OmissionMarker = "- ... earlier timeline details omitted";
+    private const string EventsHeader = "Events (chronological):";
 
     public string GenerateSummary(TimelineContextDto context)
     {
@@ -59,7 +60,7 @@ public class TimelineSummaryGenerator : ITimelineSummaryGenerator
             return $"- {e.Chapter}, P{e.ParagraphIndex}: {chars}{loc}";
         }).ToList();
         var allLines = baseLines.Concat(eventLines.Count > 0
-            ? new[] { "Events (chronological):" }.Concat(eventLines)
+            ? new[] { EventsHeader }.Concat(eventLines)
             : Enumerable.Empty<string>()).ToList();
         if (WordCount(string.Join("\n", allLines)) <= MaxWords)
             return string.Join("\n", allLines).TrimEnd();
@@ -71,31 +72,23 @@ public class TimelineSummaryGenerator : ITimelineSummaryGenerator
         foreach (var line in baseLines)
             AppendWithinBudget(output, line, ref words, contentLimit, ref omitted);
 
+        // Reserve the header first, then keep the most recent events that fit, newest backwards with no gaps.
         var keptEvents = new List<string>();
+        var eventBudget = contentLimit - WordCount(EventsHeader);
         foreach (var line in Enumerable.Reverse(eventLines))
         {
-            if (words + WordCount(line) <= contentLimit)
-            {
-                keptEvents.Add(line);
-                words += WordCount(line);
-            }
-            else
-                omitted = true;
+            if (words + WordCount(line) > eventBudget) break;
+            keptEvents.Add(line);
+            words += WordCount(line);
         }
 
         if (keptEvents.Count > 0)
         {
-            const string eventsHeader = "Events (chronological):";
-            if (words + WordCount(eventsHeader) <= contentLimit)
-            {
-                output.Add(eventsHeader);
-                output.AddRange(keptEvents.AsEnumerable().Reverse());
-                words += WordCount(eventsHeader);
-            }
-            else
-                omitted = true;
+            output.Add(EventsHeader);
+            output.AddRange(keptEvents.AsEnumerable().Reverse());
+            words += WordCount(EventsHeader);
         }
-        else if (eventLines.Count > 0)
+        if (keptEvents.Count < eventLines.Count)
             omitted = true;
 
         if (omitted) output.Add(OmissionMarker);
