@@ -6,52 +6,35 @@ namespace AIStoryBuildersV2.Shared.Stories.Storage;
 public sealed record StoryIndex(int Version, List<StoryIndexEntry> Stories);
 
 /// <summary>WASM story index: JSON <see cref="StoryIndex"/> under asb2:stories (plan §5.5, §6.2).</summary>
-public sealed class LocalStorageStoryLibraryStore(IKeyValueStore store) : IStoryLibraryStore
+public sealed class LocalStorageStoryLibraryStore(IKeyValueStore store, IStoryIndexLock indexLock) : IStoryLibraryStore
 {
-    readonly SemaphoreSlim _lock = new(1, 1);
-
     public async Task<IReadOnlyList<StoryIndexEntry>> ListAsync(CancellationToken ct = default)
     {
-        await _lock.WaitAsync(ct);
-        try
-        {
-            return (await ReadAsync()).Stories;
-        }
-        finally
-        {
-            _lock.Release();
-        }
+        ct.ThrowIfCancellationRequested();
+        return (await ReadAsync()).Stories;
     }
 
     public async Task UpsertAsync(StoryIndexEntry entry, CancellationToken ct = default)
     {
-        await _lock.WaitAsync(ct);
-        try
+        await indexLock.RunAsync(async () =>
         {
+            ct.ThrowIfCancellationRequested();
             var index = await ReadAsync();
             var at = index.Stories.FindIndex(s => StoryTitle.SameTitle(s.Title, entry.Title));
             if (at >= 0) index.Stories[at] = entry with { Id = index.Stories[at].Id };
             else index.Stories.Add(entry with { Id = (index.Stories.Count + 1).ToString() });
             await WriteAsync(index);
-        }
-        finally
-        {
-            _lock.Release();
-        }
+        }, ct);
     }
 
     public async Task RemoveAsync(string title, CancellationToken ct = default)
     {
-        await _lock.WaitAsync(ct);
-        try
+        await indexLock.RunAsync(async () =>
         {
+            ct.ThrowIfCancellationRequested();
             var index = await ReadAsync();
             if (index.Stories.RemoveAll(s => StoryTitle.SameTitle(s.Title, title)) > 0) await WriteAsync(index);
-        }
-        finally
-        {
-            _lock.Release();
-        }
+        }, ct);
     }
 
     async Task<StoryIndex> ReadAsync()

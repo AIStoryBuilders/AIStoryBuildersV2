@@ -26,6 +26,13 @@ window.asb = (function () {
 
         setUnsaved: function (value) { unsaved = !!value; },
 
+        withLock: function (name, target) {
+            if (!navigator.locks) throw new Error('Web Locks are not supported by this browser.');
+            return navigator.locks.request(name, function () {
+                return target.invokeMethodAsync('RunAsync');
+            });
+        },
+
         registerShortcuts: function (target) { shortcutTarget = target; },
 
         // Returns a handle: isWide() and dispose(). The caller disposes it when its component goes away (plan §5.7).

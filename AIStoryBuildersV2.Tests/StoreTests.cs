@@ -67,7 +67,8 @@ public class CsvStoryLibraryStoreTests : IDisposable
 public class LocalStorageStoryLibraryStoreTests
 {
     readonly InMemoryKeyValueStore _kv = new();
-    LocalStorageStoryLibraryStore Store => new(_kv);
+    readonly RecordingStoryIndexLock _indexLock = new();
+    LocalStorageStoryLibraryStore Store => new(_kv, _indexLock);
 
     [Fact]
     public async Task Upsert_writes_a_camel_case_index()
@@ -96,6 +97,73 @@ public class LocalStorageStoryLibraryStoreTests
     {
         await _kv.SetAsync(StoryStorageConstants.StoriesIndexKey, "{not json");
         Assert.Empty(await Store.ListAsync());
+    }
+
+    [Fact]
+    public async Task Index_mutations_run_inside_the_shared_lock()
+    {
+        var store = Store;
+        await store.UpsertAsync(new StoryIndexEntry("0", "A", "S", "T", "1", "", null));
+        await store.RemoveAsync("A");
+
+        Assert.Equal(2, _indexLock.CallCount);
+    }
+
+    [Fact]
+    public async Task Concurrent_upserts_from_separate_store_instances_do_not_overwrite_each_other()
+    {
+        var kv = new YieldingKeyValueStore();
+        var indexLock = new RecordingStoryIndexLock();
+        var first = new LocalStorageStoryLibraryStore(kv, indexLock);
+        var second = new LocalStorageStoryLibraryStore(kv, indexLock);
+
+        await Task.WhenAll(
+            first.UpsertAsync(new StoryIndexEntry("0", "A", "S", "T", "1", "", null)),
+            second.UpsertAsync(new StoryIndexEntry("0", "B", "S", "T", "1", "", null)));
+
+        Assert.Equal(["A", "B"], (await first.ListAsync()).Select(entry => entry.Title));
+    }
+
+    sealed class RecordingStoryIndexLock : IStoryIndexLock
+    {
+        readonly SemaphoreSlim _lock = new(1, 1);
+
+        public int CallCount { get; private set; }
+
+        public async Task RunAsync(Func<Task> action, CancellationToken ct = default)
+        {
+            CallCount++;
+            await _lock.WaitAsync(ct);
+            try { await action(); }
+            finally { _lock.Release(); }
+        }
+    }
+
+    sealed class YieldingKeyValueStore : IKeyValueStore
+    {
+        readonly Dictionary<string, string> _items = new(StringComparer.Ordinal);
+
+        public async Task<string?> GetAsync(string key)
+        {
+            var value = _items.GetValueOrDefault(key);
+            await Task.Yield();
+            return value;
+        }
+
+        public async Task SetAsync(string key, string value)
+        {
+            await Task.Yield();
+            _items[key] = value;
+        }
+
+        public Task RemoveAsync(string key)
+        {
+            _items.Remove(key);
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<string>> KeysAsync(string prefix) =>
+            Task.FromResult<IReadOnlyList<string>>(_items.Keys.Where(key => key.StartsWith(prefix, StringComparison.Ordinal)).ToList());
     }
 }
 

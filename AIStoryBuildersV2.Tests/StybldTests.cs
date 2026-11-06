@@ -144,7 +144,7 @@ public class StybldTests : IDisposable
     {
         using var memfs = new TempDir();
         var kv = new InMemoryKeyValueStore { QuotaBytes = 2000 };
-        var library = new LocalStorageStoryLibraryStore(kv);
+        var library = new LocalStorageStoryLibraryStore(kv, new TestStoryIndexLock());
         var persistence = new ZipStoryPersistence(kv, new TestHost(memfs.Path), library);
         var log = new LogService(new MemoryAppDataStore());
         var embeddings = new FakeEmbeddingGenerator();

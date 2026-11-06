@@ -91,6 +91,13 @@ public class MasterStoryBuilder
 
     private int EstimateBaseTokens(JSONMasterStory story, string systemPrompt, string userTemplate)
     {
+        var currentChapterMetadata = story.CurrentChapter is null
+            ? null
+            : new
+            {
+                story.CurrentChapter.chapter_name,
+                story.CurrentChapter.chapter_synopsis
+            };
         var fixedContent = string.Join("\n",
             systemPrompt,
             story.StoryTitle ?? "",
@@ -99,7 +106,7 @@ public class MasterStoryBuilder
             story.SystemMessage ?? "",
             string.Join("\n", story.WorldFacts ?? new List<string>()),
             story.TimelineSummary ?? "",
-            JsonConvert.SerializeObject(story.CurrentChapter),
+            JsonConvert.SerializeObject(currentChapterMetadata),
             JsonConvert.SerializeObject(story.CurrentLocation),
             JsonConvert.SerializeObject(story.CharacterList),
             JsonConvert.SerializeObject(story.CurrentParagraph));

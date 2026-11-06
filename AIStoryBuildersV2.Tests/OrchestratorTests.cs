@@ -44,6 +44,18 @@ public class OrchestratorTests : IDisposable
     }
 
     [Fact]
+    public void JsonRepair_handles_escaped_quotes_and_trailing_commas_outside_strings()
+    {
+        var repaired = JsonRepairUtility.ExtractAndRepair(
+            """{"paragraph_content":"She copied C:\\","note":"The symbol ,] was chalked.","items":[1,]}""");
+        using var document = System.Text.Json.JsonDocument.Parse(repaired);
+
+        Assert.Equal("She copied C:\\", document.RootElement.GetProperty("paragraph_content").GetString());
+        Assert.Equal("The symbol ,] was chalked.", document.RootElement.GetProperty("note").GetString());
+        Assert.Equal(1, document.RootElement.GetProperty("items")[0].GetInt32());
+    }
+
+    [Fact]
     public async Task LlmCallHelper_surfaces_authentication_failures()
     {
         _chat.EnqueueFailure(new HttpRequestException("x", null, System.Net.HttpStatusCode.Unauthorized));
@@ -71,13 +83,14 @@ public class OrchestratorTests : IDisposable
     [Fact]
     public async Task ParseNewStory_and_CreateNewChapters_use_the_chosen_model()
     {
-        _chat.EnqueueText("""{"characters":[],"locations":[],"timelines":[]}""").EnqueueText("""{"chapter":[]}""");
+        _chat.EnqueueText("""{"characters":[],"locations":[],"timelines":[]}""").EnqueueText("""{"chapter":[{"chapter_synopsis":"Private chapter prose."}]}""");
         var provider = new FakeChatClientProvider(_chat);
         var orchestrator = new OrchestratorMethods(_f.Log, _f.Embeddings, provider, new StubSettings());
         var json = await orchestrator.ParseNewStory("Title", "Synopsis", "chosen-model");
         Assert.Contains("characters", json);
         var chapters = await orchestrator.CreateNewChapters(json, "2", "chosen-model");
         Assert.Contains("chapter", chapters.Text);
+        Assert.DoesNotContain(_f.Log.Lines, line => line.Contains("Private chapter prose."));
         Assert.Equal(["chosen-model", "chosen-model"], provider.Models);
         Assert.Equal(ChatResponseFormat.Json, _chat.Options[0]!.ResponseFormat);
     }
@@ -111,6 +124,56 @@ public class OrchestratorTests : IDisposable
         var text = await _f.Orchestrator.WriteParagraph(master, new AIPrompt { AIPromptText = "go", NumberOfWords = "100", ModelId = "test-model" }, "test-model");
         Assert.Equal("Freya turned the necklace over.", text);
         Assert.Contains("100", _chat.Requests[0].Last().Text);
+    }
+
+    [Fact]
+    public async Task WriteParagraph_sends_chapter_metadata_without_its_paragraphs()
+    {
+        _chat.EnqueueText("""{"paragraph_content":"Generated."}""");
+        var master = new JSONMasterStory
+        {
+            StoryTitle = "T",
+            CurrentChapter = new JSONChapter
+            {
+                chapter_name = "Chapter 1",
+                chapter_synopsis = "The setup.",
+                paragraphs = [new JSONParagraphs { contents = "Future section prose." }]
+            },
+            CharacterList = [],
+            PreviousParagraphs = [],
+            RelatedParagraphs = [],
+            WorldFacts = []
+        };
+
+        await _f.Orchestrator.WriteParagraph(master, new AIPrompt { AIPromptText = "go", NumberOfWords = "100", ModelId = "test-model" }, "test-model");
+
+        var prompt = _chat.Requests[0].Last().Text;
+        Assert.Contains("Chapter 1", prompt);
+        Assert.Contains("The setup.", prompt);
+        Assert.DoesNotContain("Future section prose.", prompt);
+    }
+
+    [Fact]
+    public void TrimToFit_estimates_current_chapter_metadata_without_paragraph_prose()
+    {
+        var story = new JSONMasterStory
+        {
+            StoryTitle = "T",
+            CurrentChapter = new JSONChapter
+            {
+                chapter_name = "Chapter 1",
+                chapter_synopsis = "The setup.",
+                paragraphs = [new JSONParagraphs { contents = string.Join(" ", Enumerable.Repeat("chapter", 10000)) }]
+            },
+            PreviousParagraphs = [new JSONParagraphs { contents = "Keep this context.", relevance_score = 1 }],
+            RelatedParagraphs = [],
+            WorldFacts = [],
+            CharacterList = []
+        };
+
+        var trimmed = new MasterStoryBuilder("gpt-3.5-turbo").TrimToFit(story, "system", "user");
+
+        Assert.Single(trimmed.PreviousParagraphs);
     }
 
     [Fact]

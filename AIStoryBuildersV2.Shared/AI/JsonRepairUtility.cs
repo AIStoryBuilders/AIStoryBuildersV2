@@ -1,5 +1,6 @@
 #nullable disable
 using System.Text.RegularExpressions;
+using System.Text;
 
 namespace AIStoryBuildersV2.Shared.AI;
 /// <summary>
@@ -65,18 +66,22 @@ public static class JsonRepairUtility
 
         int depth = 0;
         bool inString = false;
+        bool escaped = false;
         int end = start;
         for (int i = start; i < input.Length; i++)
         {
             char c = input[i];
-            if (c == '"' && (i == 0 || input[i - 1] != '\\'))
-                inString = !inString;
-            if (!inString)
+            if (inString)
             {
-                if (c == openChar) depth++;
-                if (c == closeChar) depth--;
-                if (depth == 0) { end = i; break; }
+                if (escaped) escaped = false;
+                else if (c == '\\') escaped = true;
+                else if (c == '"') inString = false;
+                continue;
             }
+
+            if (c == '"') inString = true;
+            else if (c == openChar) depth++;
+            else if (c == closeChar && --depth == 0) { end = i; break; }
         }
 
         return input.Substring(start, end - start + 1);
@@ -84,7 +89,37 @@ public static class JsonRepairUtility
 
     private static string FixTrailingCommas(string json)
     {
-        return Regex.Replace(json, @",\s*([}\]])", "$1");
+        var result = new StringBuilder(json.Length);
+        bool inString = false;
+        bool escaped = false;
+        for (int i = 0; i < json.Length; i++)
+        {
+            char c = json[i];
+            if (inString)
+            {
+                result.Append(c);
+                if (escaped) escaped = false;
+                else if (c == '\\') escaped = true;
+                else if (c == '"') inString = false;
+                continue;
+            }
+
+            if (c == '"')
+            {
+                inString = true;
+                result.Append(c);
+            }
+            else if (c == ',')
+            {
+                int next = i + 1;
+                while (next < json.Length && char.IsWhiteSpace(json[next])) next++;
+                if (next == json.Length || (json[next] != '}' && json[next] != ']'))
+                    result.Append(c);
+            }
+            else
+                result.Append(c);
+        }
+        return result.ToString();
     }
 
     private static string FixUnescapedNewlines(string json)

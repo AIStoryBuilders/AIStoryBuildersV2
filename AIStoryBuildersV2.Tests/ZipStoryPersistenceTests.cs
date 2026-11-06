@@ -12,6 +12,7 @@ public class ZipStoryPersistenceTests : IDisposable
     const string Title = FixtureFactory.Title;
     readonly TempDir _memfs = new();
     readonly InMemoryKeyValueStore _kv = new();
+    readonly TestStoryIndexLock _indexLock = new();
     readonly LocalStorageStoryLibraryStore _library;
     readonly ZipStoryPersistence _p;
     readonly List<StoryPersistenceEvent> _events = [];
@@ -19,7 +20,7 @@ public class ZipStoryPersistenceTests : IDisposable
 
     public ZipStoryPersistenceTests()
     {
-        _library = new LocalStorageStoryLibraryStore(_kv);
+        _library = new LocalStorageStoryLibraryStore(_kv, _indexLock);
         _p = new ZipStoryPersistence(_kv, new TestHost(_memfs.Path), _library, () => _clock) { SaveDelay = TimeSpan.FromMilliseconds(50) };
         _p.Changed += _events.Add;
     }

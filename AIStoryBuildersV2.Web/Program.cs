@@ -28,6 +28,7 @@ builder.Services.AddSingleton<IKeyValueStore, LocalStorageKeyValueStore>();
 builder.Services.AddSingleton<ZipStoryPersistence>();
 builder.Services.AddSingleton<IStoryPersistence>(sp => sp.GetRequiredService<ZipStoryPersistence>());
 builder.Services.AddSingleton<StorageEventBridge>();
+builder.Services.AddSingleton<IStoryIndexLock, BrowserStoryIndexLock>();
 builder.Services.AddSingleton<IStoryLibraryStore, LocalStorageStoryLibraryStore>();
 builder.Services.AddSingleton<IAppDataStore, LocalStorageAppDataStore>();
 builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>, BrowserEmbeddingGenerator>();

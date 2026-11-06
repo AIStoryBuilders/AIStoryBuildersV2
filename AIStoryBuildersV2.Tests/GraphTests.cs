@@ -143,4 +143,55 @@ public class GraphTests : IDisposable
         var result = scripted.Requests[1].SelectMany(m => m.Contents).OfType<FunctionResultContent>().Single();
         Assert.Contains("Fantasy", result.Result?.ToString());
     }
+
+    [Fact]
+    public void Timeline_summary_caps_all_sections_and_reserves_an_omission_marker()
+    {
+        var context = new TimelineContextDto
+        {
+            TimelineName = "Long timeline",
+            TimelineDescription = string.Join(" ", Enumerable.Repeat("description", 350)),
+            Characters =
+            [
+                new TimelineCharacterDto
+                {
+                    Name = "Character",
+                    Attributes = [string.Join(" ", Enumerable.Repeat("attribute", 300))]
+                }
+            ],
+            Locations =
+            [
+                new TimelineLocationDto
+                {
+                    Name = "Location",
+                    Description = string.Join(" ", Enumerable.Repeat("location", 300))
+                }
+            ]
+        };
+
+        var summary = new TimelineSummaryGenerator().GenerateSummary(context);
+
+        Assert.InRange(summary.Split((char[])null, StringSplitOptions.RemoveEmptyEntries).Length, 1, 800);
+        Assert.Contains("earlier timeline details omitted", summary);
+    }
+
+    [Fact]
+    public void Timeline_summary_keeps_recent_events_without_exceeding_the_word_limit()
+    {
+        var context = new TimelineContextDto
+        {
+            TimelineName = "Timeline",
+            Events = Enumerable.Range(1, 300).Select(i => new TimelineEventDto
+            {
+                Chapter = $"Chapter {i}",
+                ParagraphIndex = i
+            }).ToList()
+        };
+
+        var summary = new TimelineSummaryGenerator().GenerateSummary(context);
+
+        Assert.InRange(summary.Split((char[])null, StringSplitOptions.RemoveEmptyEntries).Length, 1, 800);
+        Assert.Contains("- Chapter 300, P300:", summary);
+        Assert.DoesNotContain("- Chapter 1, P1:", summary);
+    }
 }

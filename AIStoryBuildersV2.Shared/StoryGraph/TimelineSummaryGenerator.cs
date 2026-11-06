@@ -1,5 +1,4 @@
 #nullable disable
-using System.Text;
 using AIStoryBuildersV2.Shared.Models;
 
 namespace AIStoryBuildersV2.Shared.Graph;
@@ -15,77 +14,118 @@ public interface ITimelineSummaryGenerator
 public class TimelineSummaryGenerator : ITimelineSummaryGenerator
 {
     private const int MaxWords = 800;
+    private const string OmissionMarker = "- ... earlier timeline details omitted";
 
     public string GenerateSummary(TimelineContextDto context)
     {
         if (context == null || string.IsNullOrWhiteSpace(context.TimelineName))
             return "";
 
-        var sb = new StringBuilder();
-
-        // Header
         var dateRange = FormatDateRange(context.StartDate, context.EndDate);
-        sb.AppendLine($"Timeline: {context.TimelineName}{dateRange}");
+        var baseLines = new List<string> { $"Timeline: {context.TimelineName}{dateRange}" };
         if (!string.IsNullOrWhiteSpace(context.TimelineDescription))
-            sb.AppendLine(context.TimelineDescription);
-        sb.AppendLine();
+            baseLines.Add(context.TimelineDescription);
+        baseLines.Add("");
 
-        // Characters
         if (context.Characters.Count > 0)
         {
-            sb.AppendLine("Characters active in this timeline:");
+            baseLines.Add("Characters active in this timeline:");
             foreach (var c in context.Characters)
             {
                 var attrs = string.Join("; ", c.Attributes.Where(a => !string.IsNullOrWhiteSpace(a)));
                 var rolePart = string.IsNullOrWhiteSpace(c.Role) ? "" : $" ({c.Role})";
                 var attrPart = string.IsNullOrWhiteSpace(attrs) ? "" : $": {attrs}";
-                sb.AppendLine($"- {c.Name}{rolePart}{attrPart}");
+                baseLines.Add($"- {c.Name}{rolePart}{attrPart}");
             }
-            sb.AppendLine();
+            baseLines.Add("");
         }
 
-        // Locations
         if (context.Locations.Count > 0)
         {
-            sb.AppendLine("Locations in this timeline:");
+            baseLines.Add("Locations in this timeline:");
             foreach (var loc in context.Locations)
             {
                 var desc = string.IsNullOrWhiteSpace(loc.Description)
                     ? "" : $": {loc.Description}";
-                sb.AppendLine($"- {loc.Name}{desc}");
+                baseLines.Add($"- {loc.Name}{desc}");
             }
-            sb.AppendLine();
+            baseLines.Add("");
         }
 
-        // Events (chronological; truncate oldest first if over budget)
-        if (context.Events.Count > 0)
+        var eventLines = context.Events.Select(e =>
         {
-            sb.AppendLine("Events (chronological):");
-            var eventLines = context.Events.Select(e =>
-            {
-                var chars = string.Join(", ", e.Characters);
-                var loc = string.IsNullOrWhiteSpace(e.Location) ? "" : $" at {e.Location}";
-                return $"- {e.Chapter}, P{e.ParagraphIndex}: {chars}{loc}";
-            }).ToList();
+            var chars = string.Join(", ", e.Characters);
+            var loc = string.IsNullOrWhiteSpace(e.Location) ? "" : $" at {e.Location}";
+            return $"- {e.Chapter}, P{e.ParagraphIndex}: {chars}{loc}";
+        }).ToList();
+        var allLines = baseLines.Concat(eventLines.Count > 0
+            ? new[] { "Events (chronological):" }.Concat(eventLines)
+            : Enumerable.Empty<string>()).ToList();
+        if (WordCount(string.Join("\n", allLines)) <= MaxWords)
+            return string.Join("\n", allLines).TrimEnd();
 
-            var currentWords = WordCount(sb.ToString());
-            var kept = new List<string>();
-            foreach (var line in Enumerable.Reverse(eventLines))
+        var output = new List<string>();
+        var words = 0;
+        var omitted = false;
+        var contentLimit = MaxWords - WordCount(OmissionMarker);
+        foreach (var line in baseLines)
+            AppendWithinBudget(output, line, ref words, contentLimit, ref omitted);
+
+        var keptEvents = new List<string>();
+        foreach (var line in Enumerable.Reverse(eventLines))
+        {
+            if (words + WordCount(line) <= contentLimit)
             {
-                if (currentWords + WordCount(line) > MaxWords && kept.Count > 0)
-                {
-                    var omitted = eventLines.Count - kept.Count;
-                    kept.Insert(0, $"- ... and {omitted} earlier events");
-                    break;
-                }
-                kept.Insert(0, line);
-                currentWords += WordCount(line);
+                keptEvents.Add(line);
+                words += WordCount(line);
             }
-            foreach (var line in kept)
-                sb.AppendLine(line);
+            else
+                omitted = true;
         }
 
-        return sb.ToString().TrimEnd();
+        if (keptEvents.Count > 0)
+        {
+            const string eventsHeader = "Events (chronological):";
+            if (words + WordCount(eventsHeader) <= contentLimit)
+            {
+                output.Add(eventsHeader);
+                output.AddRange(keptEvents.AsEnumerable().Reverse());
+                words += WordCount(eventsHeader);
+            }
+            else
+                omitted = true;
+        }
+        else if (eventLines.Count > 0)
+            omitted = true;
+
+        if (omitted) output.Add(OmissionMarker);
+        return string.Join("\n", output).TrimEnd();
+    }
+
+    private static void AppendWithinBudget(List<string> lines, string line, ref int words, int contentLimit, ref bool omitted)
+    {
+        if (string.IsNullOrEmpty(line))
+        {
+            lines.Add(line);
+            return;
+        }
+
+        var lineWords = WordCount(line);
+        var available = contentLimit - words;
+        if (lineWords <= available)
+        {
+            lines.Add(line);
+            words += lineWords;
+            return;
+        }
+
+        if (available > 0)
+        {
+            var wordsToKeep = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries).Take(available);
+            lines.Add(string.Join(" ", wordsToKeep));
+            words += available;
+        }
+        omitted = true;
     }
 
     private static string FormatDateRange(DateTime? start, DateTime? end)

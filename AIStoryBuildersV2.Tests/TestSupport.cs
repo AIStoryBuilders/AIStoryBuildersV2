@@ -52,6 +52,18 @@ public sealed class TestHost(string rootPath) : IHostCapabilities
     public bool SupportsSpeechToText => false;
 }
 
+public sealed class TestStoryIndexLock : IStoryIndexLock
+{
+    readonly SemaphoreSlim _lock = new(1, 1);
+
+    public async Task RunAsync(Func<Task> action, CancellationToken ct = default)
+    {
+        await _lock.WaitAsync(ct);
+        try { await action(); }
+        finally { _lock.Release(); }
+    }
+}
+
 /// <summary>Test-Data §2: deterministic 384-number vectors.</summary>
 public static class FixtureVectors
 {
