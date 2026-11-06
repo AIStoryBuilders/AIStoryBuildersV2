@@ -36,8 +36,8 @@ public class LiveProviderTests
         Skip.If(options is null, "Set ASB_LIVE_PROVIDER, ASB_LIVE_KEY and ASB_LIVE_MODEL to run live tests.");
         var client = new TemperatureFallbackChatClient(ChatClientFactory.Create(options!, new HttpClient(), isBrowser: false));
         using var f = new ServiceFixture(chat: client);
-        var orchestrator = new OrchestratorMethods(f.Log, new DatabaseService(f.AppData), f.Embeddings, new FakeChatClientProvider(client),
-            new StubSettings(options!.Provider, options.Model), new StubSettings(options.Provider, options.Model), new HttpClient());
+        var orchestrator = new OrchestratorMethods(f.Log, f.Embeddings, new FakeChatClientProvider(client),
+            new StubSettings(options!.Provider, options.Model));
 
         var master = new JSONMasterStory
         {

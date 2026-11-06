@@ -27,6 +27,9 @@ else
 }
 
 @code {
+    /// <summary>The options this dialog was opened with; X and Esc are turned off while the import runs (§5, §0.3).</summary>
+    [Parameter] public DialogOptions? Options { get; set; }
+
     bool busy;
     int progress;
     string status = "";
@@ -57,7 +60,7 @@ else
             return;
         }
 
-        busy = true;
+        SetBusy(true);
         progress = 0;
         status = "Starting import...";
         StateHasChanged();
@@ -73,8 +76,17 @@ else
         {
             Notify.Notify(NotificationSeverity.Error, "Import Error", ex.Message, 4000);
             Log.WriteToLog("ImportManuscript: " + ex.Message);
-            busy = false;
+            SetBusy(false);
             pickerKey++;
         }
+    }
+
+    void SetBusy(bool value)
+    {
+        busy = value;
+        if (Options is null) return;
+        Options.ShowClose = !value;
+        Options.CloseDialogOnEsc = !value;
+        Dialogs.Refresh();
     }
 }

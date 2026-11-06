@@ -14,24 +14,18 @@ public partial class OrchestratorMethods
     public event EventHandler<ReadTextEventArgs> ReadTextEvent;
 
     public LogService LogService { get; }
-    public DatabaseService DatabaseService { get; }
 
     readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
     readonly IChatClientProvider _clients;
     readonly IAppSettingsService _settings;
-    readonly IOpenAIKeyAccess _openAI;
-    readonly HttpClient _http;
 
-    public OrchestratorMethods(LogService logService, DatabaseService databaseService, IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
-        IChatClientProvider clients, IAppSettingsService settings, IOpenAIKeyAccess openAI, HttpClient http)
+    public OrchestratorMethods(LogService logService, IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
+        IChatClientProvider clients, IAppSettingsService settings)
     {
         LogService = logService;
-        DatabaseService = databaseService;
         _embeddingGenerator = embeddingGenerator;
         _clients = clients;
         _settings = settings;
-        _openAI = openAI;
-        _http = http;
     }
 
     // Clients

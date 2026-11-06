@@ -70,8 +70,8 @@ if both edit the same story at once, the last save wins. V2 never reads or chang
 ## AI models must pass a capability check
 
 Settings accepts a model only after a short probe passes: it connects, makes a tool call and returns parseable
-JSON. Only verified models appear in the model lists. Fine-tuned OpenAI models can be verified from the Utility
-page. Embeddings always run locally (ONNX all-MiniLM-L6-v2), in both apps.
+JSON. Only verified models appear in the model lists. Embeddings always run locally (ONNX all-MiniLM-L6-v2), in
+both apps.
 
 In the browser, each provider must allow cross-origin requests:
 

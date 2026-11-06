@@ -8,8 +8,9 @@
 @inject IHostCapabilities Host
 @inject LogService Log
 @inject ParagraphAiHelper Ai
+@inject BrowserInterop Browser
 
-<div class="asb-pe-head">
+<div class="asb-pe-head" @onkeydown="OnKeyDown">
     @if (view != "edit")
     {
         <button class="asb-icon-btn-plain" aria-label="Back to editor" title="Back to editor" disabled="@busy" @onclick="@(() => view = "edit")"><span class="mi">arrow_back</span></button>
@@ -37,13 +38,13 @@
                 {
                     <RadzenSpeechToTextButton Change="@(t => text = (text + " " + t).Trim())" />
                 }
-                <RadzenButton Icon="app_registration" class="asb-ai" aria-label="AI" title="AI" Click="@(() => view = "ai")" />
+                <RadzenButton Icon="app_registration" ButtonStyle="ButtonStyle.Warning" class="asb-ai" aria-label="AI" title="AI" Click="@(() => view = "ai")" />
                 <RadzenButton Text="Characters" ButtonStyle="ButtonStyle.Light" Click="OpenCharacters" />
                 <RadzenButton Text="Location" ButtonStyle="ButtonStyle.Light" Click="OpenLocation" />
                 <RadzenButton Text="Timeline" ButtonStyle="ButtonStyle.Light" Click="OpenTimeline" />
                 @if (undoable)
                 {
-                    <RadzenButton Icon="undo" class="asb-dark" aria-label="Undo" title="Undo" Click="Undo" />
+                    <RadzenButton Icon="undo" ButtonStyle="ButtonStyle.Dark" class="asb-dark" aria-label="Undo" title="Undo" Click="Undo" />
                 }
                 @if (!IsNew)
                 {
@@ -66,7 +67,7 @@
                 <span><b>Location:</b> @(string.IsNullOrEmpty(location) ? "—" : location)</span>
                 <span><b>Timeline:</b> @(string.IsNullOrEmpty(timeline) ? "—" : timeline)</span>
             </div>
-            <RadzenTextArea Rows="12" MaxLength="5000" Placeholder="Write this paragraph..." @bind-Value="text" Style="width:100%" class="asb-para-area" aria-label="Paragraph text" />
+            <RadzenTextArea Rows="12" MaxLength="5000" Placeholder="Write this paragraph..." @bind-Value="text" Style="width:100%" class="asb-para-area" id="pe-text" aria-label="Paragraph text" />
         }
         break;
 
@@ -218,6 +219,14 @@
         timelineOptions = [None, .. Svc.GetTimelines(Story).Select(t => t.TimelineName).OrderBy(n => n, StringComparer.OrdinalIgnoreCase)];
 
         (kbEmpty, searchKb) = await Ai.KnowledgeBaseDefaultAsync(Story.Title);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Start in the text, so typing and Esc work at once (the editor opens with AutoFocusFirstElement off).
+        if (!firstRender) return;
+        try { await Browser.FocusAsync("#pe-text"); }
+        catch (Microsoft.JSInterop.JSException) { }
     }
 
     /// <summary>V1's SetNumberOfWords.</summary>

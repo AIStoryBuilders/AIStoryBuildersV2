@@ -76,15 +76,6 @@ public interface IChatClientProvider
     Task<ChatClientResult> GetClientAsync(string? model = null);
 }
 
-/// <summary>
-/// The saved OpenAI key, for V1's fine-tuning screens only (D23). Returns null unless the provider is OpenAI.
-/// (Decided by implementer: the fine-tune API needs the raw key, which no other caller sees.)
-/// </summary>
-public interface IOpenAIKeyAccess
-{
-    Task<string?> GetOpenAIKeyAsync();
-}
-
 public interface IModelCapabilityProbe
 {
     Task<ModelProbeResult> ProbeAsync(LlmOptions options, CancellationToken ct);

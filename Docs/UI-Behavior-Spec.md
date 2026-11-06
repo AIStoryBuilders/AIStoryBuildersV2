@@ -36,9 +36,9 @@
 | Service progress events | Library and Workspace subscribe to `Svc.TextEvent` and `Orch.ReadTextEvent` and show `Info · "" / e.Message · e.DisplayLength × 1000 ms`. Unsubscribe on dispose. | [Index.razor:437-461](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Index.razor) |
 | File export | Every download calls `Export.SaveAsync(name, stream, contentType)`. `false` (MAUI save dialog cancelled) shows **no** toast **(new)**. The browser always returns `true`. | Plan D19 |
 | File pick | `InputFile` in both apps, with `accept` set. Over the size cap: `Error · "Error" / "The file is larger than {N} MB." · 4 s` **(new)**, nothing is read. | Plan D19, §9 |
-| Model dropdowns | Every AI model dropdown lists `AppSettings.VerifiedModels` only. Default selection is `AppSettings.Model`, else the first item. A fine-tuned model shows its alias (V1 `AIStoryBuilderModel.ModelName`) when one exists. With an empty list the dropdown is disabled and shows "No verified models. Verify a model in Settings." **(new)** with a link to `/settings`, and the action that needs a model is disabled. | Plan §5.6, D9 |
+| Model dropdowns | Every AI model dropdown lists `AppSettings.VerifiedModels` only. Default selection is `AppSettings.Model`, else the first item. With an empty list the dropdown is disabled and shows "No verified models. Verify a model in Settings." **(new)** with a link to `/settings`, and the action that needs a model is disabled. | Plan §5.6, D9 |
 | Speech-to-text | `RadzenSpeechToTextButton`, rendered only when `Host.SupportsSpeechToText`. Captured text is **appended** to the bound field. | Plan §5.6, R9 |
-| Dialogs | Radzen `DialogService.OpenAsync`, `CloseDialogOnEsc = true`, `ShowClose = true`, except while a dialog is busy, when Esc and the close button are disabled **(new)**. Widths come from V1 where V1 has the dialog. | V1, KGB |
+| Dialogs | Radzen `DialogService.OpenAsync`, `CloseDialogOnEsc = true`, `ShowClose = true`, except while a dialog is busy, when Esc and the close button are disabled **(new)**. Widths come from V1 where V1 has the dialog. Every dialog has a 16 px radius, a layered shadow around its edges and a lighter mask **(new, Plan Q16)**. | V1, KGB |
 | Busy | V1 pattern: an indeterminate `RadzenProgressBar` replaces the dialog or panel content while a service call runs. Buttons that start another call are disabled while busy **(new)**. | V1 |
 | Delete | Every Delete asks for confirmation. | Plan §5.6 |
 | Renames that cascade | Ask first, then run the cascading V1 method, with the busy bar. | V1, Plan §5.6 |
@@ -49,7 +49,7 @@
 | Route | Page | Source |
 |---|---|---|
 | `/` | Library | D20 |
-| `/logs`, `/utility`, `/settings` | Logs, Utility, Settings | D20 |
+| `/logs`, `/settings` | Logs, Settings (`/utility` was removed with fine-tuning, D23) | D20 |
 | `/story/{title}?tab=<tab>&p=<kbPath>` | Story Workspace. `title` is `Uri.EscapeDataString`. | D20, D29 |
 
 `tab` values: `details`, `timelines`, `locations`, `characters`, `chapters`, `chat` **(new)**, and `kb` (D13). A missing or unknown `tab` means `chapters` (Plan §5.6). Changing tabs updates the URL with `replace: true` **(new)**. `p` is read only when `tab=kb`. `&create=1` (from `KbLinkBuilder.CreateHref`) creates the page instead of opening it (§17.5).
@@ -64,11 +64,10 @@ Layout: [Library.dc.html](Design/Library.dc.html) top bar. Logo, wordmark "AI St
 |---|---|---|---|---|---|---|
 | Home | `RadzenMenuItem` · `home` | always | navigate `/` | — | Item shows the selected state | — |
 | Logs | menu · `assignment` | always | navigate `/logs` | — | selected state | — |
-| Utility | menu · `aspect_ratio` | always | navigate `/utility` | — | selected state | — |
 | Settings | menu · `line_style` | always | navigate `/settings` | — | selected state | — |
 
 - Icons are V1's ([Index.razor:20-32](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Index.razor)).
-- V1 hides Home, Logs and Utility until a key is set. V2 always shows all four (Plan §5.6). **First run:** when `Settings.GetAsync()` returns `ApiKeyConfigured == false` for a provider that needs a key, the first navigation to `/` redirects to `/settings` once per app start (Plan §5.4 "The first run starts at Settings").
+- V1 hides Home, Logs and Utility until a key is set. V2 always shows Home, Logs and Settings (Plan §5.6); V1's Utility is removed (D23). **First run:** when `Settings.GetAsync()` returns `ApiKeyConfigured == false` for a provider that needs a key, the first navigation to `/` redirects to `/settings` once per app start (Plan §5.4 "The first run starts at Settings").
 - The menu is hidden inside `/story/*`, which has its own top bar ([StoryWorkspace.dc.html](Design/StoryWorkspace.dc.html)).
 
 ---
@@ -91,9 +90,9 @@ Header: "Your stories" **(design)**, sub "Start a new manuscript, import a proje
 | Item | Spec |
 |---|---|
 | Data | `await Svc.GetStorysAsync()` on init and after every action that returns to the Library |
-| Card | Cover glyph, title (Newsreader), meta line, **Select**. Meta: `"{Style}"`, plus `" · edited {relative time}"` when `StoryIndexEntry.SavedAt` is set **(new)**. The design's chapter count is left out, because in WASM it would mean opening every zip (§19). |
+| Card | A book cover colored by the story's Style, with the title's first letter **(new, Plan Q16)**; the title (Newsreader, up to two lines); a Style chip (`"Story"` when empty) and `"Edited {relative time}"` when `StoryIndexEntry.SavedAt` is set **(new)**; and **Select** (Light, `arrow_forward` on the right). Clicking anywhere on the card does the same as **Select** **(new)**. A count line "{n} stories" sits above the grid **(new)**. The design's chapter count is left out, because in WASM it would mean opening every zip (§19). |
 | No-model card **(new)** | Shown above the cards when there is no verified model. Text: "Connect an AI provider and verify a model before you create or write stories." **(new)**. New Story stays enabled, but its model dropdown is empty and Create Story is disabled (§0.3). |
-| Empty state **(new)** | "No stories yet. Create one with New Story, or import a project." |
+| Empty state **(new)** | "No stories yet. Create one with New Story, or import a project.", in a dashed panel with an `auto_stories` icon |
 | Loading **(new)** | Four skeleton cards until `GetStorysAsync` returns |
 | Busy (creating or importing) | V1: an indeterminate `RadzenProgressBar` at the top. During manuscript import, progress shows inside the Import Manuscript dialog (§5). The action buttons are disabled **(new)**. |
 | Keyboard | none |
@@ -254,51 +253,9 @@ V1: [Logs.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Logs.ra
 
 ---
 
-## 8. Utility (`/utility`)
+## 8. Utility (removed)
 
-V1: [UtilityClass.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/UtilityClass.razor). Layout: Library artboard Utility view (card list). Header "Utility" **(design)**. V2 keeps V1's three tabs (Plan D23, F18): `RadzenTabs` "Fine Tuning", "Create Training Data", "JsonL Utility".
-
-**OpenAI gating (D23):** when `AppSettings.Provider != OpenAI`, the first two tabs show only "Fine-tuning is available only when the AI provider is OpenAI." **(new)**. This replaces V1's "FineTuning in Azure OpenAI is not supported.", which is wrong for the other providers. JsonL Utility is never gated (V1).
-
-### 8.1 Fine Tuning tab
-
-Intro: "Use this page to manage your fine tuned models on <provider console URL>" (V1 text; V1 links the OpenAI fine-tune console).
-
-| Control | Style/icon | Enabled when | Action | Confirm | Success | Failure |
-|---|---|---|---|---|---|---|
-| Card: model name + meta | — | — | Data: `Orch.ListFineTunedModelsAsync()`. Meta: "Fine-tuned · verified" or "Fine-tuned · not verified" **(new)** | — | — | — |
-| Edit | Primary · `edit` | always | Open **Edit Model Name** (§8.4) | — | Reload the list | Global |
-| Delete | Danger · `delete` | always | `Orch.DeleteFineTuneModelAsync(model)` | **Delete Model** / "Are you sure?" | Reload the list | Global |
-| Verify **(new)** | Light · `verified` | the model is not verified | `Settings.VerifyModelAsync(model.ModelId)` (D23: fine-tuned models must pass the probe) | — | `Success · "Model verified" / "{name} passed the capability check." · 4 s` **(new)**; meta updates | `Error · "Model not verified" / "{name} did not pass the {stage} check: {message}" · 8 s` **(new)** |
-
-Empty: "No fine tuned models found" (V1, italic). Loading: skeleton cards **(new)**.
-
-### 8.2 Create Training Data tab
-
-| Control | Style/icon | Enabled when | Action | Confirm | Success | Failure |
-|---|---|---|---|---|---|---|
-| "Select a Story:" | `RadzenDropDown` over `GetStorysAsync()`, `TextProperty=Title` | not busy | On change: busy bar, `Svc.CreateTrainingDataAsync(story)`, then show the viewer | — | Viewer shows. Toasts from `TextEvent`: "{ChapterName} out of {n}", "Parsing Paragraph {i} out of {n}", "Training data complete!" | Global |
-| Viewer (V1 `FineTuneView`) | Left: list of the first 100 characters of each `Assistant` (HTML and `&nbsp;` stripped). Right: tabs "(Training Data)" with "Assistant:" and "(Instruction)" with "User:", 10-row text areas. | — | Clicking a row selects it | — | — | — |
-| Upload to OpenAI | Success · `publish` | data loaded, not busy | Build JSONL in memory (no temp file, **(new)**), upload for fine-tune with the saved key, then start a fine-tune job on `gpt-3.5-turbo` (V1, Q5) | — | `Success · "Fine Tuned Data Uploaded" / "The training data has been uploaded to OpenAI to be fine tuned (File ID: {id})." · 4 s`, then `Success · "Fine Tune Started" / "The Fine Tuning of the training data has started." · 4 s` | Fewer than 10 rows: `Error · "Error" / "You must have at least 10 lines of data to upload to OpenAI." · 4 s`. Otherwise Global. |
-| Export Excel | Info · `get_app` | data loaded | `Svc.ExportTrainingData(rows)`, then `Export.SaveAsync("{Title}-TrainingData.xls", …)` | — | `Success · "Saved" / "Convert this file to JsonL to upload to OpenAI." · 4 s` | Global |
-
-### 8.3 JsonL Utility tab
-
-Intro: "Use this page to upload an Excel file and create a JsonL file to use for fine tuning" (V1).
-
-| Control | Style/icon | Enabled when | Action | Confirm | Success | Failure |
-|---|---|---|---|---|---|---|
-| Download Template | Primary · `download` | always | Read the embedded `FineTunedTemplate.xls` (Plan §5.2); `Export.SaveAsync("FineTunedTemplate.xls", …)` | — | `Success · "Saved" / "The file was saved successfully." · 4 s` | Global |
-| Upload Excel file and create JsonL file | Success · `publish` | not busy | `InputFile accept=".xls"`, at most 10 MB (Plan §9). Read rows 2 and on (columns System, User, Assistant) **from the copied memory stream** (V1 reads the spent file stream, which is a bug). Write one JSON line per row. `Export.SaveAsync("FineTunedJson.jsonL", …)`. | — | `Success · "Saved" / "The file was saved successfully." · 4 s` | Global |
-
-### 8.4 Edit Model Name dialog
-
-V1: [ModelEdit.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Controls/EditControls/ModelEdit.razor). Title "Edit Model Name", 400 × 230 px.
-
-| Field / control | Spec |
-|---|---|
-| "Model Name:" | `RadzenTextBox MaxLength=50`. Empty: `Error · "Error" / "Model Name is required" · 4 s` |
-| Save (Success · `save`) | `Orch.UpdateModelNameAsync(model)` (writes the alias file through `IAppDataStore`), then close. The list reloads. Failure: Global. |
+V1's Utility page (Fine Tuning, Create Training Data, JsonL Utility, Edit Model Name) is **removed** in V2: fine-tuning is no longer supported (Plan D23, superseded 2026-11-05). There is no `/utility` route and no menu item.
 
 ---
 
@@ -519,7 +476,7 @@ V1: [ChaptersControl.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pa
 | Load | `Svc.GetChapters(story)`; select the first chapter (or the one returned by New Chapter). Then `GetCharacters`, `GetLocations`, `GetTimelines`, `GetParagraphs(chapter)`. V1 also appends a blank editable paragraph; V2 does not (see **Add section at end**). |
 | Default selection | The first section **(design)** |
 | `OnlyChapter` | `chapters.Count == 1` (V1). It hides Delete. |
-| Chapter display **(new)** | Eyebrow = `ChapterName` ("Chapter 1"). Title = the synopsis's first sentence, cut to 60 characters, or `ChapterName` when the synopsis is empty. Dropdown text = "{ChapterName}: {title}", or `ChapterName` alone. V1 chapters have no title; see §19. |
+| Chapter display **(new)** | Eyebrow = `ChapterName` ("Chapter 1"). Title = the synopsis's first sentence, cut to 60 characters, or `ChapterName` when the synopsis is empty. A leading `#Beat N -` marker (V1's AI beats) is dropped first, and the title stops at the next marker (Plan Q15). Dropdown text = "{ChapterName}: {title}", or `ChapterName` alone. V1 chapters have no title; see §19. |
 | Unsaved synopsis | Switching chapters drops unsaved synopsis edits (V1 behavior) |
 
 ### 14.2 Outline (left)
@@ -831,8 +788,8 @@ Name dialog inline errors **(KGB)**: "Names can't contain '/' or '\\'.", "The na
 | # | Conflict | Resolution |
 |---|---|---|
 | 1 | The Settings artboard has no Azure endpoint, Clear key or Test connection | Plan §5.6 and Q8: KGB `LlmSettingsForm` fields plus the probe; the artboard gives layout only |
-| 2 | The Utility artboard shows only the fine-tune list; V1 has three tabs | Keep V1's three tabs (D23, F18) |
-| 3 | V1's Utility note "FineTuning in Azure OpenAI is not supported." is shown for every non-OpenAI provider | Replaced with a provider-neutral note **(new)** |
+| 2 | The Utility artboard shows only the fine-tune list; V1 has three tabs | Utility removed (D23, superseded) |
+| 3 | V1's Utility note "FineTuning in Azure OpenAI is not supported." is shown for every non-OpenAI provider | Moot: Utility removed (D23) |
 | 4 | The artboard's character background types (Personality, Backstory, Relationships) differ from V1's | V1 types (Appearance, Goals, History, Aliases, Facts): they are stored in the files and used by `DetectCharacterAttributes` |
 | 5 | The artboard lists all background types at once; V1 filters by the dropdown | Artboard: list everything, with the type in the heading; the dropdown only sets the type for **Add Background** |
 | 6 | The timeline dialog artboard lacks V1's Description and shows date-times | Keep Description (it is in `Timelines.csv`); use `ShowTime=true` and the artboard labels "Start Date:" and "Stop Date:" |

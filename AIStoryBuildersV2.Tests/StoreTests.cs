@@ -110,9 +110,8 @@ public class AppDataStoreTests : IDisposable
     {
         var store = new FileAppDataStore(_dir.Path);
         await store.WriteAsync(AppDataFile.Log, "line\r\n");
-        await store.WriteAsync(AppDataFile.Database, "{}");
         Assert.Equal("line\r\n", File.ReadAllText(Path.Combine(_dir.Path, "AIStoryBuildersLog.csv")));
-        Assert.Equal("{}", await store.ReadAsync(AppDataFile.Database));
+        Assert.Equal("line\r\n", await store.ReadAsync(AppDataFile.Log));
         Assert.Null(await new FileAppDataStore(_dir.Combine("missing")).ReadAsync(AppDataFile.Log));
     }
 
@@ -122,9 +121,7 @@ public class AppDataStoreTests : IDisposable
         var kv = new InMemoryKeyValueStore();
         var store = new LocalStorageAppDataStore(kv);
         await store.WriteAsync(AppDataFile.Log, "x");
-        await store.WriteAsync(AppDataFile.Database, "{}");
         Assert.Equal("x", kv.Items["asb2:log"]);
-        Assert.Equal("{}", kv.Items["asb2:db"]);
         kv.QuotaBytes = 10;
         await Assert.ThrowsAsync<StorageQuotaExceededException>(() => store.WriteAsync(AppDataFile.Log, new string('x', 100)));
     }
@@ -179,16 +176,5 @@ public class LogServiceTests
         var (d, e) = LogService.SplitTimestamp(line);
         Assert.Equal(date, d);
         Assert.Equal(entry, e);
-    }
-
-    [Fact]
-    public async Task Database_round_trips_and_tolerates_invalid_json()
-    {
-        var data = new MemoryAppDataStore();
-        var db = new DatabaseService(data);
-        await db.SaveDatabase(new Dictionary<string, string> { ["ft:model"] = "My Model" });
-        Assert.Equal("My Model", (await db.LoadDatabaseAsync())["ft:model"]);
-        data.Files[AppDataFile.Database] = "{ broken";
-        Assert.Empty(await db.LoadDatabaseAsync());
     }
 }

@@ -2,13 +2,12 @@ using AIStoryBuildersV2.Shared.Knowledge.Persistence;
 
 namespace AIStoryBuildersV2.Shared.Stories.Storage;
 
-/// <summary>MAUI: V1's AIStoryBuildersLog.csv and AIStoryBuildersDatabase.json in the stories root, shared with V1.</summary>
+/// <summary>MAUI: V1's AIStoryBuildersLog.csv in the stories root, shared with V1.</summary>
 public sealed class FileAppDataStore(string rootPath) : IAppDataStore
 {
     public string PathOf(AppDataFile file) => Path.Combine(rootPath, file switch
     {
         AppDataFile.Log => "AIStoryBuildersLog.csv",
-        AppDataFile.Database => "AIStoryBuildersDatabase.json",
         _ => throw new ArgumentOutOfRangeException(nameof(file)),
     });
 
@@ -22,13 +21,12 @@ public sealed class FileAppDataStore(string rootPath) : IAppDataStore
         File.WriteAllTextAsync(PathOf(file), content, StoryFormat.Utf8NoBom, ct);
 }
 
-/// <summary>WASM: asb2:log and asb2:db in localStorage.</summary>
+/// <summary>WASM: asb2:log in localStorage.</summary>
 public sealed class LocalStorageAppDataStore(IKeyValueStore store) : IAppDataStore
 {
     static string KeyOf(AppDataFile file) => file switch
     {
         AppDataFile.Log => StoryStorageConstants.LogKey,
-        AppDataFile.Database => StoryStorageConstants.DatabaseKey,
         _ => throw new ArgumentOutOfRangeException(nameof(file)),
     };
 

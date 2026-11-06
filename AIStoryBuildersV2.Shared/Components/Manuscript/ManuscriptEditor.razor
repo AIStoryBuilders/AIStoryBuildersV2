@@ -156,19 +156,11 @@
         Log.WriteToLog(ex.Message);
     }
 
-    /// <summary>Title = the synopsis's first sentence, cut to 60 characters, or the chapter name (UI-Behavior-Spec §14.1).</summary>
-    static string ChapterTitle(Chapter c)
-    {
-        var synopsis = (c.Synopsis ?? "").Trim();
-        if (synopsis.Length == 0) return c.ChapterName;
-        var end = synopsis.IndexOfAny(['.', '!', '?']);
-        var sentence = end > 0 ? synopsis[..(end + 1)] : synopsis;
-        return sentence.Length > 60 ? sentence[..60].TrimEnd() + "…" : sentence;
-    }
+    static string ChapterTitle(Chapter c) => ChapterDisplay.Title(c);
 
     record ChapterOption(int Sequence, string Text);
 
-    static string DropdownText(Chapter c) => string.IsNullOrWhiteSpace(c.Synopsis) ? c.ChapterName : $"{c.ChapterName}: {ChapterTitle(c)}";
+    static string DropdownText(Chapter c) => ChapterDisplay.DropdownText(c);
 
     static string FirstWords(string? text)
     {
@@ -288,7 +280,7 @@
         selected.Story = Story;
         var result = await Dialogs.OpenAsync<ParagraphEditorDialog>(paragraph.Id == -1 ? "New Section" : $"Section {paragraph.Sequence}",
             new Dictionary<string, object?> { ["Chapter"] = selected, ["Paragraph"] = paragraph, ["Story"] = Story },
-            new DialogOptions { Width = "760px", CloseDialogOnEsc = false, ShowClose = false, ShowTitle = false });
+            new DialogOptions { Width = "760px", CloseDialogOnEsc = false, ShowClose = false, ShowTitle = false, AutoFocusFirstElement = false });
         if (result is ParagraphEditorDialog.Outcome outcome)
         {
             LoadParagraphs();

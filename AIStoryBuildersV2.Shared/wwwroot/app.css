@@ -91,8 +91,9 @@ h3.asb-sec { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin:
 /* Radzen buttons: the design's rounded, bold style. */
 .rz-button, .rz-button .rz-button-text { border-radius: 8px; font-weight: 600; text-transform: none; letter-spacing: 0; font-family: var(--asb-ui-font); }
 .rz-button.rz-light, .rz-button.rz-base.rz-variant-filled { background: var(--asb-light); color: #26222F; border: 1px solid #ddd9e4; }
-.rz-button.asb-ai { background: var(--asb-ai); color: #fff; }
-.rz-button.asb-dark { background: var(--asb-dark); color: #fff; }
+/* The Radzen theme loads after this file and its filled styles use three classes, so these use four. */
+.asb-app .rz-button.rz-variant-filled.asb-ai { background: var(--asb-ai); color: #fff; border-color: var(--asb-ai); }
+.asb-app .rz-button.rz-variant-filled.asb-dark { background: var(--asb-dark); color: #fff; border-color: var(--asb-dark); }
 .asb-icon-btn.rz-button { width: 34px; height: 34px; min-width: 34px; padding: 0; border-radius: 8px;
   border: 1px solid var(--asb-line); background: #fff; color: var(--asb-ink); box-shadow: none; }
 
@@ -131,17 +132,60 @@ h3.asb-sec { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin:
 .asb-panel .kgb-help { margin-top: 2px; }
 
 /* ---------- library ---------- */
-.asb-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-.asb-scard { display: flex; align-items: center; gap: 14px; background: var(--asb-panel); border: 1px solid var(--asb-line);
-  border-radius: 13px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(20,18,30,.04); }
-.asb-scard:hover { border-color: var(--asb-accent-line); box-shadow: 0 10px 26px -18px rgba(20,18,30,.3); }
-.asb-scover { width: 44px; height: 56px; border-radius: 6px; flex: 0 0 auto; background: linear-gradient(145deg, var(--asb-accent), #3f36a8);
-  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; color: #fff; box-shadow: inset -6px 0 10px -8px rgba(0,0,0,.6); }
-.asb-scover .mi { font-size: 18px; }
-.asb-smeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.asb-smeta b { display: block; font-family: var(--asb-prose-font); font-size: 18px; font-weight: 600; color: var(--asb-ink); line-height: 1.2;
-  letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.asb-smeta span { font-size: 11.5px; color: var(--asb-muted); }
+.asb-lib-count { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; color: var(--asb-muted); margin: 0 0 10px 2px; }
+.asb-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.asb-scard { position: relative; display: flex; align-items: flex-start; gap: 16px; background: var(--asb-panel); border: 1px solid var(--asb-line);
+  border-radius: 16px; padding: 16px 16px 16px 18px; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(28,26,39,.05), 0 6px 18px -12px rgba(28,26,39,.18);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.asb-scard:hover { transform: translateY(-2px); border-color: var(--asb-accent-line);
+  box-shadow: 0 2px 4px rgba(28,26,39,.05), 0 18px 36px -16px rgba(28,26,39,.32); }
+.asb-scard:focus-within { border-color: var(--asb-accent); }
+.asb-scard-missing, .asb-scard-sk { cursor: default; }
+.asb-scard-missing:hover, .asb-scard-sk:hover { transform: none; }
+
+/* A small book: spine shading on the left, a soft gloss, the title's initial and a quiet mark. */
+.asb-scover { position: relative; width: 58px; height: 78px; flex: 0 0 auto; border-radius: 4px 9px 9px 4px; overflow: hidden; color: #fff;
+  display: flex; align-items: center; justify-content: center; background: var(--asb-g, linear-gradient(150deg, #d9d6e4, #c4c0d3));
+  box-shadow: 0 1px 1px rgba(0,0,0,.12), 0 8px 16px -8px rgba(28,26,39,.55); }
+.asb-scover::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 7px; background: linear-gradient(90deg, rgba(0,0,0,.28), rgba(0,0,0,.05)); }
+.asb-scover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 42%); }
+.asb-scover-ini { position: relative; z-index: 1; font-family: var(--asb-prose-font); font-size: 30px; font-weight: 600; line-height: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.asb-scover-mark.mi { position: absolute; bottom: 6px; right: 6px; z-index: 1; font-size: 13px; opacity: .7; }
+.asb-g-story     { --asb-g: linear-gradient(150deg, #6b62e0, #3f36a8); }
+.asb-g-drama     { --asb-g: linear-gradient(150deg, #5b4fd6, #2f2790); }
+.asb-g-sci-fi    { --asb-g: linear-gradient(150deg, #1aa3b8, #0b5866); }
+.asb-g-romance   { --asb-g: linear-gradient(150deg, #e0577f, #9b1f4a); }
+.asb-g-comedy    { --asb-g: linear-gradient(150deg, #f0a530, #b8650a); }
+.asb-g-fantasy   { --asb-g: linear-gradient(150deg, #8b5cf6, #4c1d95); }
+.asb-g-mystery   { --asb-g: linear-gradient(150deg, #4f6684, #1f2a3d); }
+.asb-g-thriller  { --asb-g: linear-gradient(150deg, #d64545, #7a1515); }
+.asb-g-children  { --asb-g: linear-gradient(150deg, #38b2e8, #1a6fb0); }
+.asb-g-ya        { --asb-g: linear-gradient(150deg, #c45ad6, #6f2385); }
+.asb-g-action    { --asb-g: linear-gradient(150deg, #f07a3a, #a8400c); }
+.asb-g-crime     { --asb-g: linear-gradient(150deg, #5d6b7a, #262e38); }
+.asb-g-dystopian { --asb-g: linear-gradient(150deg, #7c8a3a, #3b4414); }
+.asb-g-horror    { --asb-g: linear-gradient(150deg, #4a3b4f, #120c14); }
+
+.asb-smeta { flex: 1; min-width: 0; min-height: 78px; display: flex; flex-direction: column; gap: 6px; }
+.asb-smeta b { font-family: var(--asb-prose-font); font-size: 19px; padding-top: 1px; font-weight: 600; color: var(--asb-ink); line-height: 1.2;
+  letter-spacing: -0.01em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+.asb-smeta > span { font-size: 11.5px; color: var(--asb-muted); }
+.asb-stags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.asb-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: var(--asb-accent); background: var(--asb-accent-soft); border: 1px solid var(--asb-accent-line); }
+.asb-sedit { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--asb-muted); }
+.asb-sedit .mi { font-size: 14px; }
+.asb-sfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; }
+.asb-sopen.rz-button { flex: 0 0 auto; }
+.asb-sopen.rz-button .rz-button-box { flex-direction: row-reverse; gap: 4px; }
+.asb-sopen.rz-button .rz-button-icon-left { margin: 0; font-size: 16px; }
+.asb-scard:hover .asb-sopen.rz-button:not(.rz-state-disabled) { background: var(--asb-accent); border-color: var(--asb-accent); color: #fff; }
+.asb-lib-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 44px 20px; text-align: center; color: var(--asb-muted);
+  background: var(--asb-panel); border: 1px dashed var(--asb-accent-line); border-radius: 16px; }
+.asb-lib-empty .mi { font-size: 34px; color: var(--asb-accent); opacity: .8; }
+.asb-lib-empty p { margin: 0; font-size: 13.5px; }
 .asb-nomodel { display: flex; align-items: center; gap: 12px; max-width: none; }
 .asb-mb { margin-bottom: 12px; }
 
@@ -150,6 +194,21 @@ h3.asb-sec { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin:
 .asb-file-button input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .asb-file-button.rz-state-disabled { pointer-events: none; opacity: .6; }
 .asb-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+/* ---------- dialogs: a lifted card with shadowed edges, over a lighter mask ----------
+   Set on .asb-app (both layouts host RadzenComponents inside it) so it wins over the theme's :root values. */
+.asb-app {
+  --rz-dialog-border-radius: 16px;
+  --rz-dialog-shadow: 0 0 0 1px rgba(28,26,39,.08), 0 2px 6px rgba(28,26,39,.10), 0 16px 36px -6px rgba(28,26,39,.30),
+    0 40px 80px -24px rgba(28,26,39,.45);
+  --rz-dialog-mask-background-color: var(--asb-ink);
+  --rz-dropdown-panel-shadow: 0 0 0 1px rgba(28,26,39,.06), 0 10px 28px -8px rgba(28,26,39,.30);
+}
+.asb-app .rz-dialog-mask { opacity: .38; }
+.asb-app .rz-dialog { border: 1px solid rgba(255,255,255,.6); }
+.asb-app .rz-dialog-titlebar { border-bottom: 1px solid var(--asb-line); padding-bottom: 14px; }
+.asb-app .rz-dialog-content { padding-top: 18px; }
+.asb-app .rz-dialog-confirm .rz-dialog-confirm-buttons { gap: 8px; }
 .asb-file { display: block; margin: 12px 0; }
 
 /* ---------- workspace (StoryWorkspace.dc.html) ---------- */
@@ -304,15 +363,3 @@ h3.asb-ws-sec { font-size: 18px; font-weight: 700; margin: 0 0 16px; color: var(
 .asb-kb-main { flex: 1; min-height: 0; display: flex; }
 .asb-kb-main > .kgb-graph { flex: 1; min-width: 0; }
 .asb-linkbtn { border: none; background: none; padding: 0; font: inherit; cursor: pointer; }
-
-/* ---------- utility (Library artboard Utility view) ---------- */
-.asb-cards-1 { grid-template-columns: 1fr; }
-.asb-model-name { font-family: var(--asb-ui-font) !important; font-size: 14.5px !important; }
-.asb-util-tabs { background: var(--asb-panel); border-radius: 12px; }
-.asb-ft { display: grid; grid-template-columns: minmax(220px, 5fr) 7fr; gap: 16px; }
-.asb-ft-list { height: 300px; overflow: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
-.asb-ft-row { text-align: left; font: inherit; font-size: 12.5px; padding: 8px 10px; border: 1px solid var(--asb-line); border-radius: 9px; background: #fff; cursor: pointer; color: var(--asb-ink); }
-.asb-ft-row:hover { border-color: var(--asb-accent-line); }
-.asb-ft-row.sel { border-color: var(--asb-accent); background: var(--asb-accent-soft); }
-.asb-field-label { display: block; font-size: 12.5px; font-weight: 600; margin: 8px 0 6px; }
-@media (max-width: 760px) { .asb-ft { grid-template-columns: 1fr; } }

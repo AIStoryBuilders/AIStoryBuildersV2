@@ -29,7 +29,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(new AppMetadata { Version = StoryStorageConstants.StybldFormatVersion });
         services.TryAddSingleton<IEmbeddingGenerator<string, Embedding<float>>, UnavailableEmbeddingGenerator>();
         services.AddSingleton<LogService>();
-        services.AddSingleton<DatabaseService>();
         services.AddSingleton<OrchestratorMethods>();
         services.AddSingleton<StoryGraphCache>();
         services.AddSingleton<IGraphBuilder, GraphBuilder>();
@@ -40,7 +39,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AppSettingsService>();
         services.AddSingleton<IAppSettingsService>(sp => sp.GetRequiredService<AppSettingsService>());
         services.AddSingleton<IChatClientProvider>(sp => sp.GetRequiredService<AppSettingsService>());
-        services.AddSingleton<IOpenAIKeyAccess>(sp => sp.GetRequiredService<AppSettingsService>());
 
         // Story graph (D17, D26) and manuscript import.
         services.AddSingleton<IGraphQueryService, GraphQueryService>();

@@ -16,7 +16,7 @@ namespace AIStoryBuildersV2.Shared.Settings;
 /// wrapped in <see cref="TemperatureFallbackChatClient"/>.
 /// </summary>
 public sealed class AppSettingsService(ISettingsStore store, IHostCapabilities host, HttpClient http, IModelCapabilityProbe probe)
-    : IAppSettingsService, IChatClientProvider, IOpenAIKeyAccess
+    : IAppSettingsService, IChatClientProvider
 {
     public const string NoKeyReason = "Add an API key in Settings";
 
@@ -149,12 +149,6 @@ public sealed class AppSettingsService(ISettingsStore store, IHostCapabilities h
         {
             return new ChatClientResult(null, ex.Message.Contains("API key", StringComparison.OrdinalIgnoreCase) ? NoKeyReason : ex.Message);
         }
-    }
-
-    public async Task<string?> GetOpenAIKeyAsync()
-    {
-        var s = await LoadAsync();
-        return s.ProviderValue == LlmProvider.OpenAI && !string.IsNullOrWhiteSpace(s.ApiKey) ? s.ApiKey : null;
     }
 
     public async Task<string?> TestConnectionAsync(CancellationToken ct)

@@ -62,8 +62,8 @@ public class OrchestratorTests : IDisposable
     [Fact]
     public async Task Unverified_or_missing_client_reasons_surface()
     {
-        var orchestrator = new OrchestratorMethods(_f.Log, new DatabaseService(_f.AppData), _f.Embeddings,
-            new FakeChatClientProvider(null, "Model 'x' has not passed the capability check. Verify it in Settings."), new StubSettings(), new StubSettings(), new HttpClient());
+        var orchestrator = new OrchestratorMethods(_f.Log, _f.Embeddings,
+            new FakeChatClientProvider(null, "Model 'x' has not passed the capability check. Verify it in Settings."), new StubSettings());
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => orchestrator.ParseNewStory("T", "S", "x"));
         Assert.Contains("capability check", ex.Message);
     }
@@ -73,7 +73,7 @@ public class OrchestratorTests : IDisposable
     {
         _chat.EnqueueText("""{"characters":[],"locations":[],"timelines":[]}""").EnqueueText("""{"chapter":[]}""");
         var provider = new FakeChatClientProvider(_chat);
-        var orchestrator = new OrchestratorMethods(_f.Log, new DatabaseService(_f.AppData), _f.Embeddings, provider, new StubSettings(), new StubSettings(), new HttpClient());
+        var orchestrator = new OrchestratorMethods(_f.Log, _f.Embeddings, provider, new StubSettings());
         var json = await orchestrator.ParseNewStory("Title", "Synopsis", "chosen-model");
         Assert.Contains("characters", json);
         var chapters = await orchestrator.CreateNewChapters(json, "2", "chosen-model");

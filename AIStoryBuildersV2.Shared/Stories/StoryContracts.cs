@@ -48,7 +48,6 @@ public static class StoryStorageConstants
     public const string StoriesIndexKey = KeyPrefix + "stories";
     public static string ZipKey(string title) => KeyPrefix + "story:" + title;
     public const string LogKey = KeyPrefix + "log";
-    public const string DatabaseKey = KeyPrefix + "db";
     public const string SettingsKey = KeyPrefix + "settings";
     public const int SaveDebounceMs = 1500;
     public const long AssumedQuotaBytes = 5_000_000;

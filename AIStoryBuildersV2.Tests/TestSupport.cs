@@ -118,8 +118,7 @@ public sealed class ServiceFixture : IDisposable
         Log = new LogService(AppData) { SaveDelay = TimeSpan.FromMinutes(10) };
         Library = new CsvStoryLibraryStore(Dir.Path);
         Chat = chat ?? new ScriptedChatClient();
-        Orchestrator = new OrchestratorMethods(Log, new DatabaseService(AppData), Embeddings, new FakeChatClientProvider(Chat), new StubSettings(),
-            new StubSettings(), new HttpClient());
+        Orchestrator = new OrchestratorMethods(Log, Embeddings, new FakeChatClientProvider(Chat), new StubSettings());
         Service = new AIStoryBuildersService(new TestHost(Dir.Path), Library, Persistence, Log, Embeddings, Orchestrator,
             GraphCache, new GraphBuilder(), new AppMetadata { Version = StoryStorageConstants.StybldFormatVersion });
     }
@@ -267,7 +266,7 @@ public sealed class StubProbe(bool pass = true, ProbeStage failAt = ProbeStage.T
 }
 
 /// <summary>An <see cref="IAppSettingsService"/> with fixed settings.</summary>
-public sealed class StubSettings(Shared.Llm.LlmProvider provider = Shared.Llm.LlmProvider.OpenAI, string model = "test-model") : IAppSettingsService, IOpenAIKeyAccess
+public sealed class StubSettings(Shared.Llm.LlmProvider provider = Shared.Llm.LlmProvider.OpenAI, string model = "test-model") : IAppSettingsService
 {
     public Task<AppSettings> GetAsync() => Task.FromResult(new AppSettings("Test", provider, model, null, true,
         [new VerifiedModel(provider, null, model, Shared.Llm.ProbeConstants.Version, DateTimeOffset.UtcNow)]));
@@ -277,6 +276,5 @@ public sealed class StubSettings(Shared.Llm.LlmProvider provider = Shared.Llm.Ll
     public Task<Shared.Llm.ModelListResult> ListModelsAsync(Shared.Llm.LlmProvider p, string? e, string? k, bool r, CancellationToken ct) => Task.FromResult(Shared.Llm.ModelListResult.Success([model]));
     public Task<ModelProbeResult> VerifyModelAsync(string m, CancellationToken ct) => Task.FromResult(new ModelProbeResult(true, null, null, TimeSpan.Zero));
     public Task RemoveVerifiedModelAsync(string m) => Task.CompletedTask;
-    public Task<string?> GetOpenAIKeyAsync() => Task.FromResult<string?>(provider == Shared.Llm.LlmProvider.OpenAI ? "sk-test" : null);
     public event Action? Changed { add { } remove { } }
 }

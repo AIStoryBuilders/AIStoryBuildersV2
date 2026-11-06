@@ -92,6 +92,8 @@
     string? dragSource;
     string? dropTarget;
     string? lastSelected;
+    /// <summary>The folder clicked since the last page opened; New page and New folder go there (UI-Behavior-Spec §17.2).</summary>
+    string? selectedFolder;
     ElementReference scrollRef;
     DotNetObjectReference<ExplorerPane>? self;
 
@@ -120,6 +122,7 @@
     {
         if (SelectedPath is null || SelectedPath == lastSelected) return;
         lastSelected = SelectedPath;
+        selectedFolder = null;
         // Reveal the selected page: expand its ancestors.
         var parts = SelectedPath.Split('/');
         var folder = "";
@@ -176,6 +179,7 @@
 
     string TargetFolder()
     {
+        if (selectedFolder is not null && nodes.TryGetValue(selectedFolder, out var folder) && folder.IsFolder) return folder.Path;
         if (SelectedPath is null) return "";
         if (nodes.TryGetValue(SelectedPath, out var n) && n.IsFolder) return n.Path;
         return LinkResolver.FolderOf(SelectedPath);
@@ -229,7 +233,8 @@
         if (args.Value is not string path || !nodes.TryGetValue(path, out var node)) return;
         if (node.IsFolder)
         {
-            // Selecting a folder toggles it.
+            // Selecting a folder toggles it and makes it the target for New page and New folder.
+            selectedFolder = path;
             if (!State.ExpandedFolders.Remove(path))
             {
                 State.ExpandedFolders.Add(path);

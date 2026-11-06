@@ -1,8 +1,7 @@
-@* Every AI model dropdown (UI-Behavior-Spec §0.3): verified models only, the default selected, fine-tuned aliases shown. *@
+@* Every AI model dropdown (UI-Behavior-Spec §0.3): verified models only, the default selected. *@
 @using AIStoryBuildersV2.Shared.Settings
 @implements IDisposable
 @inject IAppSettingsService Settings
-@inject DatabaseService Database
 
 @if (_models.Count == 0)
 {
@@ -40,12 +39,8 @@ else
     async Task LoadAsync()
     {
         var settings = await Settings.GetAsync();
-        Dictionary<string, string> aliases;
-        try { aliases = await Database.LoadDatabaseAsync(); }
-        catch (Exception) { aliases = []; }
-
         _models = settings.VerifiedModels
-            .Select(m => new Option(aliases.TryGetValue(m.Model, out var alias) && !string.IsNullOrWhiteSpace(alias) ? alias : m.Model, m.Model))
+            .Select(m => new Option(m.Model, m.Model))
             .OrderBy(m => m.Text, StringComparer.OrdinalIgnoreCase)
             .ToList();
 

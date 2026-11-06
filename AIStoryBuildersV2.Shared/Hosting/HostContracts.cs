@@ -34,9 +34,9 @@ public interface IFileExportService
     Task<bool> SaveAsync(string suggestedFileName, Stream content, string contentType, CancellationToken ct = default);
 }
 
-public enum AppDataFile { Log, Database }
+public enum AppDataFile { Log }
 
-/// <summary>App files that live outside a story folder: the log and the fine-tune alias map (D5, D19).</summary>
+/// <summary>App files that live outside a story folder: the log (D5, D19).</summary>
 public interface IAppDataStore
 {
     Task<string?> ReadAsync(AppDataFile file, CancellationToken ct = default);

@@ -26,8 +26,6 @@
     <TrimmerRootAssembly Include="Xceed.Document.NET" />
     <TrimmerRootAssembly Include="Xceed.Words.NET" />
     <TrimmerRootAssembly Include="Xceed.Drawing.NET" />
-    <TrimmerRootAssembly Include="EPPlus" />
-    <TrimmerRootAssembly Include="ExcelDataReader" />
     <TrimmerRootAssembly Include="UglyToad.PdfPig" />
     <TrimmerRootAssembly Include="OpenAI" />
   </ItemGroup>
