@@ -1,9 +1,9 @@
 # AIStoryBuildersV2 — instructions for AI coding agents
 
 > **Start with [AGENTS.md](../AGENTS.md) and [Docs/AIStoryBuildersV2-Plan.md](../Docs/AIStoryBuildersV2-Plan.md).** They
-> take precedence over this file. The plan retargets the solution to .NET 11 (task T0).
+> take precedence over this file.
 
-This is a .NET 10 MAUI (Windows) + Blazor WebAssembly app sharing the `AIStoryBuildersV2.Shared`
+This is a .NET 11 MAUI (Windows) + Blazor WebAssembly app sharing the `AIStoryBuildersV2.Shared`
 Razor class library (same structure as KnowledgeGraphBuilder).
 
 **Build the UI from the design.** The screens are specified in `Docs/Design/DESIGN.md` and the
@@ -19,4 +19,5 @@ Guidance:
 - Behavioural reference for the domain (story/chapter/paragraph model, manuscript import,
   multi-provider AI, knowledge graph): the existing AIStoryBuilders V1 app (local path in AGENTS.md).
 - The Knowledgebase tab follows KnowledgeGraphBuilder (local path in AGENTS.md).
-- iOS/MacCatalyst target only builds on macOS; build the Windows TFM and the Web project on Windows.
+- Only the Windows TFM (`net11.0-windows10.0.19041.0`) builds by default. Pass `-p:IncludeMobileTargets=true`
+  to add Android/iOS/MacCatalyst (iOS/MacCatalyst need macOS).

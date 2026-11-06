@@ -1,16 +1,26 @@
 @inherits LayoutComponentBase
 
 <RadzenTheme Theme="material" />
-@* Inside the app container so Radzen dialogs, menus and toasts render here. *@
-<RadzenComponents />
 
-<div class="asb-app">
-    <header class="asb-header">
-        <span class="asb-brand">AI StoryBuilders</span>
+<div class="asb-app kgb-light">
+    @* Inside the app container so Radzen dialogs, menus and toasts get the asb tokens. *@
+    <RadzenComponents />
+    <header class="asb-topbar">
+        <a class="asb-brand" href="./">
+            <img src="_content/AIStoryBuildersV2.Shared/images/logo.png" alt="AIStoryBuilders logo" />
+            <span class="asb-ttl"><b>AI StoryBuilders</b><span>Manuscript studio</span></span>
+        </a>
         <span class="asb-sp"></span>
+        <RadzenMenu Responsive="false" class="asb-menu" aria-label="Main menu">
+            <RadzenMenuItem Text="Home" Icon="home" Path="./" Match="NavLinkMatch.All" />
+            <RadzenMenuItem Text="Logs" Icon="assignment" Path="logs" />
+            <RadzenMenuItem Text="Settings" Icon="line_style" Path="settings" />
+        </RadzenMenu>
     </header>
-    <main class="asb-main">
-        @Body
+    <main class="asb-page">
+        <div class="asb-wrap">
+            @Body
+        </div>
     </main>
     <footer class="asb-footer">
         <a href="https://BlazorData.net" target="_blank" rel="noopener">© BlazorData.net</a>

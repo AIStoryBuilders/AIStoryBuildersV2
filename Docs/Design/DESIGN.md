@@ -76,7 +76,7 @@ Settings**. The selected menu item swaps the page body between four views.
   the provider), a note that *embeddings are handled locally*, and **Save**. Before a key is entered,
   a "get an API key" secondary button links to the provider's console.
 - **Logs** — **Export Log** / **Clear Log** + a table of log entries (date + message).
-- **Utility** — Fine Tuning: a list of fine-tuned models, each with **Edit** / **Delete**.
+- **Utility** — *Removed in V2 (plan D23): fine-tuning is no longer supported. The artboard's Utility view is not built.*
 
 ## 2. Story Workspace  (`StoryWorkspace.dc.html`)
 

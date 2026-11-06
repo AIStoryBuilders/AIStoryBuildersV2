@@ -41,7 +41,7 @@ The scaffold already has KGB's shape: a MAUI app, a WASM app, a Shared RCL, an A
    - manuscript import, `.stybld` import and export, and Word export
    - the story knowledge graph and Story Chat with tools
    - local embeddings
-   - Logs and the Utility screens (fine-tuning, training data, JSONL)
+   - Logs (V1's Utility screens for fine-tuning, training data and JSONL were removed, D23)
 3. **Implements the redesigned UI** from [Docs/Design/DESIGN.md](Design/DESIGN.md): the Library, a full-page Story Workspace, and the Manuscript Editor as the Chapters tab.
 4. **Adds a Knowledge Base per story.** It is KGB's Markdown wiki, with a page explorer, an editor, a links panel and a graph. It is **independent** of the story's characters, locations, timelines and chapters, and AI writing and chat can query it.
 5. **Uses KGB's AI Settings code** and adds a **live capability probe**. A model is accepted only after it makes a tool call and correctly reads a small knowledge graph.
@@ -117,11 +117,11 @@ The scaffold already has KGB's shape: a MAUI app, a WASM app, a Shared RCL, an A
 | D16 | **Checkbox default:** checked when the story's KB has at least one page, otherwise unchecked and disabled ("This story's knowledge base is empty"). The choice is kept per story and per surface for the session only. | Persist it in the story files | It needs no new files in the V1 format. See Q2. |
 | D17 | V1's static `GraphState` becomes a singleton **`StoryGraphCache`** keyed by story title, holding the graph, the story and a dirty flag for each title. Services find the title through `StoryGraphContext` (D26). The `new GraphQueryService(...)` calls in `MasterStory` become injected services. | Keep the static class | MAUI can open several windows, and static state leaks between stories |
 | D18 | **Embeddings are host-specific `IEmbeddingGenerator<string, Embedding<float>>`.** MAUI uses V1's `LocalEmbeddingGenerator` (Microsoft.ML.OnnxRuntime, all-MiniLM-L6-v2), placed in the library from D28. WASM uses Online's `BrowserEmbeddingGenerator` with onnxruntime-web and the quantized model, **vendored into the Web project instead of loaded from the jsDelivr CDN**. Files go under `wwwroot/js/ort/` and `wwwroot/models/all-MiniLM-L6-v2/`. `embedding.js` builds every URL with `new URL(path, document.baseURI)`, because the module import is relative to `js/` and Online's absolute `/models/...` paths break under a non-root base href ([embedding.js:21-37](../../AIStoryBuildersOnline/wwwroot/js/embedding.js)). | Use the CDN as Online does | No third-party scripts may run in an origin that holds the API key (§9). Both hosts produce 384-dimension normalized vectors. |
-| D19 | Host differences go behind small interfaces: `IFileExportService` (MAUI uses CommunityToolkit `FileSaver`, WASM uses `asb.saveAsFile`), `IAppDataStore` for the log and fine-tune alias files, `IStoryLibraryStore` for the story index, and `IHostCapabilities`. File picking uses `InputFile` in both apps. | MAUI `FilePicker` | `InputFile` works in BlazorWebView. One component serves both apps. |
-| D20 | Routes: `/` (Library), `/logs`, `/utility`, `/settings`, `/story/{title}?tab=<tab>&p=<kbPath>`. The workspace is a page, not a dialog. | V1's dialog and boolean panels ([Index.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Index.razor)) | The design has a full-page workspace with a "Close workspace" button. Deep links make KB page links work (D13). |
+| D19 | Host differences go behind small interfaces: `IFileExportService` (MAUI uses CommunityToolkit `FileSaver`, WASM uses `asb.saveAsFile`), `IAppDataStore` for the log file, `IStoryLibraryStore` for the story index, and `IHostCapabilities`. File picking uses `InputFile` in both apps. | MAUI `FilePicker` | `InputFile` works in BlazorWebView. One component serves both apps. |
+| D20 | Routes: `/` (Library), `/logs`, `/settings` (`/utility` removed, D23), `/story/{title}?tab=<tab>&p=<kbPath>`. The workspace is a page, not a dialog. | V1's dialog and boolean panels ([Index.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Index.razor)) | The design has a full-page workspace with a "Close workspace" button. Deep links make KB page links work (D13). |
 | D21 | **Docx import and Word export use DocX 5.0.0 in both apps**, as Online does. `DocumentFormat.OpenXml` is dropped. | Keep OpenXml for import on MAUI | One parser path. Online proves DocX works in WASM. |
 | D22 | **Zip extraction is always manual** (`ZipArchive` entry by entry, with a Zip Slip guard). | `ZipFile.ExtractToDirectory` | It aborts the WASM runtime ([Online Index.razor:342-344](../../AIStoryBuildersOnline/Components/Pages/Index.razor)), yet Online still calls it in `ImportProject` |
-| D23 | Utility (fine-tuning, training data, JSONL) is ported as-is. It is **enabled only when the provider is OpenAI**, with a note for other providers. Fine-tuned models must also pass the probe before they can be selected. | Drop the Utility screens | Feature #2 asks for all functionality. Fine-tuning is OpenAI-only in V1. |
+| D23 | **Superseded 2026-11-05 by the owner:** fine-tuning is no longer supported, so V1's Utility screens (fine-tuned models, training data, JSONL) and the `/utility` route are **removed** from both apps, with the model alias file (`AIStoryBuildersDatabase.json` / `asb2:db`), EPPlus and ExcelDataReader. V2 never reads or writes the alias file; V1 keeps its own copy. | Port Utility as-is (the original D23) | The owner retired fine-tuning. |
 | D24 | `ServiceDefaults` stays in the solution and nothing references it, as in KGB | Delete it | Not needed at runtime. Deleting it is Q10. |
 
 ---
@@ -170,7 +170,7 @@ The scaffold already has KGB's shape: a MAUI app, a WASM app, a Shared RCL, an A
 | F15 | Paragraph RAG: cosine similarity over earlier paragraphs (same timeline weighted 1.0, others 0.7, top 10), plus a timeline summary | — | [MasterStory.cs](../../../ADefWebserver/AIStoryBuilders/Services/AIStoryBuildersService.MasterStory.cs) |
 | F16 | Settings: provider, key, Azure endpoint and version, model list with refresh, test access | [Settings.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Settings.razor) | `SettingsService`, `AIModelService` ([AIModelService.cs](../../../ADefWebserver/AIStoryBuilders/AI/AIModelService.cs)) |
 | F17 | Logs: view, export and clear (newest first; V1 keeps the 1000 newest old lines plus the new one) | [Logs.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Logs.razor) | `LogService` |
-| F18 | Utility: fine-tuned models (list, rename alias, delete), create training data (Excel export or OpenAI upload), and the JSONL utility (xls template to JSONL) | [UtilityClass.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/UtilityClass.razor), [ModelEdit.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Controls/EditControls/ModelEdit.razor) | `CreateTrainingDataAsync`, `ExportTrainingData` ([ExportImport.cs:17,379](../../../ADefWebserver/AIStoryBuilders/Services/AIStoryBuildersService.ExportImport.cs)). EPPlus uses `LicenseContext.NonCommercial` (`:395`). |
+| F18 | **Removed (D23).** Utility: fine-tuned models (list, rename alias, delete), create training data (Excel export or OpenAI upload), and the JSONL utility (xls template to JSONL) | [UtilityClass.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/UtilityClass.razor), [ModelEdit.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Controls/EditControls/ModelEdit.razor) | `CreateTrainingDataAsync`, `ExportTrainingData` ([ExportImport.cs:17,379](../../../ADefWebserver/AIStoryBuilders/Services/AIStoryBuildersService.ExportImport.cs)). EPPlus uses `LicenseContext.NonCommercial` (`:395`). |
 | F19 | Local embeddings (all-MiniLM-L6-v2, 384 dimensions) | — | [LocalEmbeddingGenerator.cs:12-49](../../../ADefWebserver/AIStoryBuilders/AI/LocalEmbeddingGenerator.cs) |
 
 **V1 on-disk layout** (under `Documents\AIStoryBuilders`; `BasePath` is set in [AIStoryBuildersService.cs:23](../../../ADefWebserver/AIStoryBuilders/Services/AIStoryBuildersService.cs)). V2 must keep it byte-compatible (D4).
@@ -179,7 +179,7 @@ The scaffold already has KGB's shape: a MAUI app, a WASM app, a Shared RCL, an A
 |---|---|
 | `AIStoryBuildersStories.csv` | `Id\|Title\|Style\|Theme\|Synopsis\|WorldFacts` |
 | `AIStoryBuildersSettings.config` | V1 settings JSON with a plaintext key. **V2 never touches it** (D7). |
-| `AIStoryBuildersDatabase.json` | Fine-tuned model id → alias |
+| `AIStoryBuildersDatabase.json` | Fine-tuned model id → alias. V1 only; V2 ignores it (D23). |
 | `AIStoryBuildersLog.csv` | Newest line first, at most 1,001 lines (V1 keeps the 1000 newest old lines plus the new one) |
 | `{Title}/Timelines.csv` | `Name\|Description\|Start\|Stop` |
 | `{Title}/Characters/{Name}.csv` | `Type\|Timeline\|Description\|[vector]` per line |
@@ -337,7 +337,7 @@ Every other service is a **singleton**. `BrowserInterop` and `ICurrentStoryKnowl
 |---|---|
 | Same files | V2 reads and writes V1's formats exactly. Format tests use V1 fixture folders (T2a). |
 | No V1 settings | V2 stores its own settings in Preferences and SecureStorage. The first run starts at Settings. |
-| Shared app files | Log and fine-tune alias files are shared. V2 writes them in V1's format: newest log line first, keeping the 1000 newest old lines plus the new one (1,001 lines), as V1 does. |
+| Shared app files | The log file is shared (the fine-tune alias file is not used, D23). V2 writes them in V1's format: newest log line first, keeping the 1000 newest old lines plus the new one (1,001 lines), as V1 does. |
 | KB folder | V1 ignores `{Title}/KnowledgeBase/`. V1's `ExportProject` copies it and `ImportProject` restores it (§4.2), so a round trip through V1 keeps it. V1's `DeleteStory` deletes it along with the story. |
 | Concurrent edits | No locking. If V1 and V2 edit the same story at once, the last writer wins **(accepted, R3)**. The README says to run one app at a time. |
 | Embeddings | Same model file (`all-MiniLM-L6-v2.onnx`), so the vectors are identical |
@@ -350,7 +350,7 @@ Every other service is a **singleton**. `BrowserInterop` and `ICurrentStoryKnowl
 | `asb2:stories` | JSON `StoryIndex { Version: 1, Stories: [StoryIndexEntry] }`, serialized camelCase (`StoryIndexEntry` and a sample are in §6.2) |
 | `asb2:story:{Title}` | Base64 of the zipped `{StoriesRoot}/{Title}/` folder, the same layout as `.stybld` minus `Manifest.config` |
 | `asb2:log` | Log text, newest first, same cap as the MAUI log file (1,001 lines) |
-| `asb2:db` | JSON alias map |
+| `asb2:db` | Not used since D23 (was the JSON alias map) |
 | `asb2:settings` | `StoredSettings` JSON, including the API key and `VerifiedModels` |
 
 All values are written with `SetItemAsStringAsync`, so they are raw strings, not JSON-quoted.
@@ -378,10 +378,9 @@ Also fixed from Online: the 512 KB import cap becomes 50 MB, and no save excepti
 
 ```mermaid
 graph TD
-    Layout["MainLayout<br/>logo + RadzenMenu: Home, Logs, Utility, Settings"]
+    Layout["MainLayout<br/>logo + RadzenMenu: Home, Logs, Settings"]
     Lib["Library '/'<br/>New Story, Import Story, Import docx-pdf-txt, cards"]
     Logs["Logs '/logs'"]
-    Util["Utility '/utility'"]
     Set["Settings '/settings'<br/>LlmSettingsForm + VerifiedModelsPanel"]
     WS["StoryWorkspace '/story/title'<br/>top bar + RadzenTabs"]
     Det["DetailsTab"]
@@ -394,7 +393,6 @@ graph TD
 
     Layout --> Lib
     Layout --> Logs
-    Layout --> Util
     Layout --> Set
     Lib --> WS
     WS --> Det
@@ -969,7 +967,7 @@ graph TD
 | `AIStoryBuildersV2.Web/Services/BrowserHostCapabilities.cs`, `BrowserFileExportService.cs`, `LocalStorageKeyValueStore.cs`, `BrowserEmbeddingGenerator.cs`, `StorageEventBridge.cs` | New | §5.3 and §5.5. `LocalStorageKeyValueStore` comes from KGB. `BrowserEmbeddingGenerator` comes from Online. `StorageEventBridge` is new code modeled on KGB's: it forwards `storage` events for `asb2:*` keys to `ZipStoryPersistence` and `AppSettingsService`. |
 | `AIStoryBuildersV2.Web/wwwroot/js/embedding.js`, `tokenizer.js` | New | From Online. The CDN URLs are replaced by `js/ort/`, and every URL is resolved against `document.baseURI` (D18). |
 | `AIStoryBuildersV2.Web/wwwroot/index.html` | Modified | Add `asb.js` and `js/embedding.js` |
-| `AIStoryBuildersV2.Shared/AIStoryBuildersV2.Shared.csproj` | Modified | net11 and the packages in §6.6. `FineTunedTemplate.xls` as `EmbeddedResource`. |
+| `AIStoryBuildersV2.Shared/AIStoryBuildersV2.Shared.csproj` | Modified | net11 and the packages in §6.6. (`FineTunedTemplate.xls` removed, D23). |
 | `Shared/Hosting/HostContracts.cs` | New | §6.1 |
 | `Shared/Hosting/ServiceCollectionExtensions.cs` | Modified | Register every shared singleton in §5.3 |
 | `Shared/Models/**` | New | Port from V1, plus `AIPrompt.SearchKnowledgeBase` and `JSONMasterStory.KnowledgeBaseNotes` |
@@ -983,7 +981,7 @@ graph TD
 | `Shared/Llm/**`, `Shared/Settings/**` | New | KGB code with the §6.3 changes. `GoogleAIChatClient` comes from Online. Add `ModelCapabilityProbe` and `ProbeFixtures`. |
 | `Shared/Knowledge/**`, `Shared/Markdown/**` | New | KGB code minus the D12 exclusions. Add `StoryKnowledgeBaseProvider`. Remove the `kgb:` constants from shared code. |
 | `Shared/KnowledgeAssist/**` | New | §6.4 |
-| `Shared/Layout/MainLayout.razor` | Modified | Logo, `RadzenMenu` (Home, Logs, Utility, Settings), footer |
+| `Shared/Layout/MainLayout.razor` | Modified | Logo, `RadzenMenu` (Home, Logs, Settings), footer |
 | `Shared/Pages/Home.razor` | Deleted | Replaced by `Library.razor` |
 | `Shared/Pages/Library.razor`, `Logs.razor`, `Utility.razor`, `Settings.razor`, `StoryWorkspace.razor` | New | §5.6 |
 | `Shared/Components/Library/*` | New | `StoryCard`, `NewStoryDialog`, `ImportStoryButton`, `ImportManuscriptDialog` |
@@ -992,7 +990,7 @@ graph TD
 | `Shared/Components/Chat/StoryChatTab.razor`, `ChatMessageRenderer.razor` | New | §5.6. The renderer comes from V1 with KGB's `SafeMarkdown.ForChat` (no images, inert external links). |
 | `Shared/Components/Knowledge/*` | New | `KnowledgeBaseTab`, plus KGB `ExplorerPane`, `EditorPane`, `LinksPanel`, `Common/*` dialogs, and `KnowledgeGraphView` (refactored from `GraphPage`) |
 | `Shared/Components/Settings/LlmSettingsForm.razor`, `VerifiedModelsPanel.razor`, `StorageUsagePanel.razor` | New | KGB form plus §5.9 |
-| `Shared/Components/Utility/*` | New | `FineTunedModels`, `TrainingData`, `JsonlUtility`, `ModelEditDialog` (V1) |
+| `Shared/Components/Utility/*` | Removed (D23) | — |
 | `Shared/wwwroot/app.css` | Modified | Component styles from the artboards |
 | `Shared/wwwroot/asb.js` | New | From `kgb.js` (§5.7) plus `saveAsFile`, `visibilitychange` and the `storage` listener |
 | `Shared/wwwroot/fonts/*` | New | Inter and Newsreader `woff2` (SIL OFL) |
@@ -1012,12 +1010,12 @@ graph TD
 | API key on MAUI | SecureStorage (DPAPI). V1's plaintext `AIStoryBuildersSettings.config` is not read or changed, and the README notes it may still hold a V1 key. |
 | Key sent to the wrong host | KGB's `HostFor` rules: the key goes only to the provider's fixed host, or to the user-entered endpoint for Azure and Ollama. Google AI sends it in a header, never in a URL (D8). |
 | Zip Slip in `.stybld` or the WASM zip | Every entry path is normalized, must stay under the story folder, and must not contain `..`, a rooted path or a drive letter (D22) |
-| Prompt injection from KB pages, imported manuscripts or `.stybld` content | KB tools are read-only (D14). Story-graph mutation tools keep V1's `confirmed` preview. Prompts mark KB content as reference, not instructions. Chat output cannot load images or follow external links. |
+| Prompt injection from KB pages, imported manuscripts or `.stybld` content | KB tools are read-only (D14). Story-graph mutation tools only **propose** a change: the model never sees a `confirmed` parameter, and the change waits in Story Chat with **Apply** and **Discard** buttons until the user clicks Apply (Q17, SEC-001). Prompts mark tool results and KB content as data, not instructions. Chat output cannot load images or follow external links. |
 | Probe data | The probe sends only synthetic fixture text, never story content |
 | Data sent to providers | Story text, KB pages that the model reads, and prompts go to the configured provider. Settings names the provider host. |
 | Browser data loss | **Export Project** for each story, the quota banner, and a README reminder that clearing site data deletes stories |
 | Logs | Titles, operations and errors only. No prose, prompts or keys. |
-| Large imports | `.stybld` and manuscripts are capped at 50 MB. Excel uploads are capped at 10 MB. |
+| Large imports | `.stybld` and manuscripts are capped at 50 MB. Excel uploads are capped at 10 MB. Archives are also bounded when inflated (`ZipLimits`: entry count, bytes per entry and total bytes, counted while extracting), and PDFs at 2,000 pages (Q17, SEC-005). |
 
 The plan contains no real hosts, keys or personal data.
 
@@ -1100,11 +1098,11 @@ dotnet test AIStoryBuildersV2.Tests/AIStoryBuildersV2.Tests.csproj
 
 Every *done when* below can be checked with what earlier tasks have built. UI checks come only after the UI exists.
 
-- [ ] **T0: Retarget to .NET 11.** Update `global.json`, every TFM (with `IncludeMobileTargets`) and the package versions (§6.6). Update the workloads (§6.6, R5). Update `copilot-instructions.md`, the README and layout text that say ".NET 10".
+- [x] **T0: Retarget to .NET 11.** Update `global.json`, every TFM (with `IncludeMobileTargets`) and the package versions (§6.6). Update the workloads (§6.6, R5). Update `copilot-instructions.md`, the README and layout text that say ".NET 10".
   - *Done when:* the three commands above pass, `aspire run` lists `aistorybuildersv2-windows` and `web`, `web` starts and the Windows app starts from the dashboard (or R2 is applied and noted), and the workload versions are recorded in the PR.
-- [ ] **T1: Host contracts and shells.** §6.1 and §6.2 contracts. Host implementations of `IHostCapabilities` and `IFileExportService`. `DiskStoryPersistence` and a no-op `ZipStoryPersistence` stub. `asb.js` with `saveAsFile`. MainLayout with the menu, and empty `/`, `/logs`, `/utility`, `/settings` and `/story/{title}` pages.
+- [x] **T1: Host contracts and shells.** §6.1 and §6.2 contracts. Host implementations of `IHostCapabilities` and `IFileExportService`. `DiskStoryPersistence` and a no-op `ZipStoryPersistence` stub. `asb.js` with `saveAsFile`. MainLayout with the menu, and empty `/`, `/logs`, `/utility`, `/settings` and `/story/{title}` pages.
   - *Done when:* both apps show the menu and navigate between the pages, and a temporary button on `/utility` exports a text file in each app.
-- [ ] **T2a: Models, read paths and stores.** Port `Models/`, `Parsers`, the read methods (`GetStorysAsync`, `GetTimelines`, `GetLocations`, `GetCharacters`, `GetChapters`, `GetParagraphs`), `LogService` (sync `WriteToLog`, buffered, D25) and `DatabaseService`. Add `CsvStoryLibraryStore`, `FileAppDataStore`, `LocalStorageStoryLibraryStore`, `LocalStorageAppDataStore`, `StoryTitle`, and the `before/` fixture. Port `GraphBuilder` now. Port `OrchestratorMethods` as a compile-only skeleton whose AI methods throw `NotImplementedException` until T7b, and add `StoryGraphCache` as an empty class that T8 fills in, so the §6.2 constructor compiles.
+- [x] **T2a: Models, read paths and stores.** Port `Models/`, `Parsers`, the read methods (`GetStorysAsync`, `GetTimelines`, `GetLocations`, `GetCharacters`, `GetChapters`, `GetParagraphs`), `LogService` (sync `WriteToLog`, buffered, D25) and `DatabaseService`. Add `CsvStoryLibraryStore`, `FileAppDataStore`, `LocalStorageStoryLibraryStore`, `LocalStorageAppDataStore`, `StoryTitle`, and the `before/` fixture. Port `GraphBuilder` now. Port `OrchestratorMethods` as a compile-only skeleton whose AI methods throw `NotImplementedException` until T7b, and add `StoryGraphCache` as an empty class that T8 fills in, so the §6.2 constructor compiles.
   - *Done when:* the fixture read tests, the store tests and the `StoryTitle` tests pass.
 - [ ] **T2b: Golden fixtures.** Make the V1 `after-<operation>/` fixtures (§10), add `FakeEmbeddingGenerator`, and add the vector-agnostic comparer.
   - *Done when:* the fixtures and their README are committed, and the comparer passes on `before/` against itself.
@@ -1112,7 +1110,7 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
   - *Done when:* the golden tests for the rename-timeline and rename-character operations pass, the culture test passes, and `MarkDirtyCoverageTests` passes for these methods.
 - [ ] **T2d: Story, chapter and paragraph mutations and restructure**: `AddStory` file writes, `UpdateStoryAsync`, `DeleteStoryAsync`, chapter and paragraph CRUD, `RestructureChapters` and `RestructureParagraphs`.
   - *Done when:* the add-paragraph and delete-chapter golden tests pass, and `MarkDirtyCoverageTests` passes for these methods.
-- [ ] **T3: WASM persistence.** The full `ZipStoryPersistence`, the quota mapping, `StorageEventBridge`, `LocalStorageKeyValueStore` and the usage meter on `/settings`.
+- [x] **T3: WASM persistence.** The full `ZipStoryPersistence`, the quota mapping, `StorageEventBridge`, `LocalStorageKeyValueStore` and the usage meter on `/settings`.
   - *Done when:* the `ZipStoryPersistence` tests pass. In the browser, a temporary dev button on `/utility` creates a fixture story, the `asb2:*` keys show in DevTools, and the story survives a reload.
 - [ ] **T4: Embeddings.** The `Embeddings.Onnx` library with V1's `LocalEmbeddingGenerator` and the reference-vector test. WASM `BrowserEmbeddingGenerator` with vendored onnxruntime-web, base-relative URLs, and the DEBUG self-test button.
   - *Done when:* the self-test reports cosine ≥ 0.98 for all 5 sentences, and DevTools shows no request to any CDN, including under a non-root `<base href>`.
@@ -1124,11 +1122,11 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
     - a known tool-capable model verifies
     - a model without tool support (for example a small Ollama model) is refused, with the stage named
     - Settings' default-model dropdown offers only verified models
-- [ ] **T7a: Client plumbing.** `OrchestratorMethods` gets `IChatClientProvider` and the per-call model. `ChatOptionsFactory` switches on `LlmProvider`. Wrap clients in `TemperatureFallbackChatClient`. Replace the 23 `SettingsService.*` uses (D31). Port `LlmCallHelper`, `JsonRepairUtility` and `TokenEstimator`.
+- [x] **T7a: Client plumbing.** `OrchestratorMethods` gets `IChatClientProvider` and the per-call model. `ChatOptionsFactory` switches on `LlmProvider`. Wrap clients in `TemperatureFallbackChatClient`. Replace the 23 `SettingsService.*` uses (D31). Port `LlmCallHelper`, `JsonRepairUtility` and `TokenEstimator`.
   - *Done when:* there are no `SettingsService` references left, and the `ChatOptionsFactory` and `LlmCallHelper` tests pass with `FakeChatClient`.
-- [ ] **T7b: Orchestrator methods and RAG.** `ParseNewStory`, `CreateNewChapters`, `WriteParagraph`, `DetectCharacters`, `DetectCharacterAttributes`, `GetStoryBeats`, the manuscript methods, the prompts, and `CreateMasterStory` RAG with `MasterStoryBuilder`.
+- [x] **T7b: Orchestrator methods and RAG.** `ParseNewStory`, `CreateNewChapters`, `WriteParagraph`, `DetectCharacters`, `DetectCharacterAttributes`, `GetStoryBeats`, the manuscript methods, the prompts, and `CreateMasterStory` RAG with `MasterStoryBuilder`.
   - *Done when:* each method runs against `FakeChatClient` in a test. An opt-in integration test runs `WriteParagraph` against a real provider when the `ASB_LIVE_PROVIDER` and `ASB_LIVE_KEY` environment variables are set.
-- [ ] **T8: Story graph.** Port `GraphQueryService`, `GraphMutationService` and `TimelineSummaryGenerator`. Fill in `StoryGraphCache` (created empty in T2a) and add `StoryGraphContext` (D26). Port `ReloadStoryAsync` and `EnsureGraphExistsAsync`.
+- [x] **T8: Story graph.** Port `GraphQueryService`, `GraphMutationService` and `TimelineSummaryGenerator`. Fill in `StoryGraphCache` (created empty in T2a) and add `StoryGraphContext` (D26). Port `ReloadStoryAsync` and `EnsureGraphExistsAsync`.
   - *Done when:* a test runs `ReloadStoryAsync` on the fixture and writes `Graph/*.json` with V1's schema (compared to a golden file), and the `StoryGraphContext` tests pass.
 - [ ] **T9a: Library, New Story and Import Story.** Story cards, `NewStoryDialog` (AI generation, verified models only), and `.stybld` import and export (50 MB, manual extraction, D6).
   - *Done when:* a story is created by AI in both apps, a V1 `.stybld` imports, the §10 `.stybld` tests pass, and a V2-exported `.stybld` imports into V1.
@@ -1148,9 +1146,9 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
   - *Done when:* Autodetect adds the detected attributes after confirmation, and the result of the WebView2 speech check is recorded (R9).
 - [ ] **T13: Story Chat.** Port `StoryChatService` on the shared client with `StoryGraphContext` per turn. Add `StoryChatTab` with streaming, Clear and Retry.
   - *Done when:* "Who does Balt interact with in chapter 2?" answers from graph tools in both apps, and a graph mutation asks for confirmation as V1 does.
-- [ ] **T14: Per-story KB core.** Port KGB `Knowledge/` and `Markdown/` (D12), plus `StoryKnowledgeBaseProvider`, `TickTrackingKnowledgeStore`, `CurrentStoryKnowledgeBase` and `KbLinkBuilder`. Wire the persistence hook.
+- [x] **T14: Per-story KB core.** Port KGB `Knowledge/` and `Markdown/` (D12), plus `StoryKnowledgeBaseProvider`, `TickTrackingKnowledgeStore`, `CurrentStoryKnowledgeBase` and `KbLinkBuilder`. Wire the persistence hook.
   - *Done when:* the ported KGB tests, the provider isolation tests and the ticks tests pass, and a test round-trips a story with KB pages through `.stybld`.
-- [ ] **T15: Knowledgebase tab.** `KnowledgeBaseTab`, plus the ported `ExplorerPane`, `EditorPane`, `LinksPanel` and dialogs, rewired to `ICurrentStoryKnowledgeBase`. `KnowledgeGraphView` with disposable JS bindings, and the empty state.
+- [x] **T15: Knowledgebase tab.** `KnowledgeBaseTab`, plus the ported `ExplorerPane`, `EditorPane`, `LinksPanel` and dialogs, rewired to `ICurrentStoryKnowledgeBase`. `KnowledgeGraphView` with disposable JS bindings, and the empty state.
   - *Done when:*
     - pages and folders can be created, renamed, moved and deleted
     - links, backlinks and unresolved links show
@@ -1160,8 +1158,8 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
     - switching tabs 20 times leaves no extra document listeners (checked in DevTools)
 - [ ] **T16: Search knowledgebase.** `KnowledgeBaseTools`, `KnowledgeContextRetriever`, the chat and paragraph checkboxes (D16), the prompt addendum and the `TrimToFit` priority.
   - *Done when:* the §10 tests pass. With a KB page about "the Necklace", checked chat cites `[[…]]` and unchecked chat cannot see it (no `kb_` calls in the log). A checked Generate includes a fact found only in the KB.
-- [ ] **T17: Utility.** Fine-tuned models (list, alias edit, delete), training data (Excel export, OpenAI upload) and the JSONL utility. OpenAI-only gating.
-  - *Done when:* each F18 action works with an OpenAI key, other providers show the note, and a fine-tuned model can be verified and selected.
+- [x] **T17: Utility.** ~~Fine-tuned models, training data and the JSONL utility.~~ **Removed by the owner (D23):** the Utility page, its route, menu item, services, tests and Excel packages are gone.
+  - *Done when:* no Utility menu item, `/utility` route or fine-tuning code remains in either app.
 - [ ] **T18: Final pass.** README, publish WASM, serve it statically and smoke-test it (R11). Run a coexistence test with V1 on the same machine.
   - *Done when:* every item in §13 passes.
 
@@ -1174,7 +1172,7 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
 3. The MAUI and Web projects contain no `.razor` files.
 4. **MAUI:** the Library shows the existing V1 stories in `Documents\AIStoryBuilders`. A story edited in V2 opens and works in V1, and the reverse.
 5. **WASM:** the published static files work from a plain static server. Stories are stored as `asb2:story:{Title}` and survive a reload. Hitting the quota shows an error and loses no in-session data.
-6. Every feature F1–F19 in §4.2 works in both apps. Utility is OpenAI-only, as in V1.
+6. Every feature F1–F19 in §4.2 except F18 (removed, D23) works in both apps.
 7. The Library, Story Workspace tabs, Manuscript Editor and paragraph editor match the artboards in `Docs/Design`.
 8. Every story has its own Knowledge Base, with explorer, editor, links and graph. It is stored under `{Title}/KnowledgeBase/` and carried in `.stybld` exports.
 9. Settings accepts a model only after it passes the connect, tool-call and graph-parse probes. Every model dropdown lists only verified models.
@@ -1193,10 +1191,16 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
 | Q2 | Should the Search knowledgebase checkbox state be saved per story across sessions? | No; session only (D16) |
 | Q3 | Should Story Chat be able to create or update KB pages, with KGB's approval cards? | No |
 | Q4 | Should MAUI offer a one-time import of the provider, model and key from V1's `AIStoryBuildersSettings.config`? | No; the user enters settings again |
-| Q5 | V1 fine-tunes on `gpt-3.5-turbo`. Keep it, or pick the base model in the UI? | Keep V1 behavior |
+| Q5 | ~~V1 fine-tunes on `gpt-3.5-turbo`. Keep it, or pick the base model in the UI?~~ | Moot: fine-tuning was removed (D23) |
 | Q6 | Should the standalone Manuscript Editor artboard (with Preview and Display settings) become its own full-screen route? | No; it is the Chapters tab only |
 | Q7 | If the 5 MB limit is hit in practice, move WASM storage to IndexedDB behind `IStoryPersistence`? | Follow-up |
 | Q8 | Several artboard and DESIGN.md details conflict (button colors; the Settings artboard has no Azure endpoint; `canvas.json` uses old file names). Which wins? | DESIGN.md for fields, except where a decision (for example D8, D20) or UI-Behavior-Spec §19 overrides it; the artboards for layout and colors |
 | Q9 | Should the Settings page show the "Get an API key" links for each provider? They point to provider consoles. | Yes, as in V1 |
 | Q10 | Delete the unused `ServiceDefaults` project? | Keep it, unreferenced |
 | Q11 | Should a verified model expire (for example after 90 days) and be re-probed? | No; only a `ProbeConstants.Version` bump clears the list |
+| Q12 | Inter and Newsreader must be vendored (§9), but no Newsreader `woff2` is in the repo and downloading one needs a person. | **Decided by implementer (T1):** Inter comes from the Radzen.Blazor package (`_content/Radzen.Blazor/fonts/InterVariable.woff2`, SIL OFL). Prose uses `'Newsreader', Georgia, serif`, so a vendored Newsreader drops in by adding an `@font-face` to `app.css`. |
+| Q13 | §5.8 says the retriever uses `UseFunctionInvocation` with `MaximumIterationsPerRequest = 4`, but `IChatClientProvider` returns plain clients (V1's Story Chat also runs its own tool loop). | **Decided by implementer (T16):** `KnowledgeContextRetriever` runs its own loop of at most 4 model calls; the 4th is sent without tools so the model must answer, and a model that still calls tools gives a Warning and no notes. Same 60 s timeout, 4000-character cap and `NO_RELEVANT_PAGES` rule. |
+| Q14 | T18 added a footer Xceed notice for the DocX Community License. Keep it? | **Decided by the owner:** no. The app is not used commercially, so the footer notice is removed. The README still records both licenses (R14), and the EPPlus `SetNonCommercialOrganization` call stays, because EPPlus 8 throws without it. |
+| Q15 | V1's AI writes chapter synopses as "#Beat 1 - …#Beat 2 - …", so the §14.1 title rule showed "#Beat 1 - …" as the chapter title. | **Decided by implementer:** the title and chapter dropdown drop a leading `#Beat N -` marker and stop at the next one (`ChapterDisplay`). The synopsis itself is unchanged. |
+| Q17 | The security review (`Docs/SecurityReview.md`) asked for fixes to SEC-001, SEC-002 and SEC-005. How should each work? | **Decided by implementer:** (1) SEC-001: Story Chat's 20 mutation tools take no `confirmed` parameter. Each runs the preview and stores a `PendingMutation` with its arguments frozen; `StoryChatTab` shows it as a card with the summary, the arguments and **Apply**/**Discard**. Only `IStoryChatService.ApplyPendingAsync` runs it. What the user did is sent to the model as an app note ahead of the next message. Pending changes are dropped by `ClearSession` (Clear conversation, leaving or deleting the story). `ApplyPendingAsync` is not on the §6.2 MarkDirty list because it writes only through methods on that list. (2) SEC-002: Preview makes only `http`, `https` and `mailto` links clickable; any other scheme renders like a chat link (inert). (3) SEC-005: `ZipLimits.Story` (20,000 entries, 64 MB per entry, 512 MB total) for MAUI imports, `ZipLimits.BrowserStory` (32 MB, 128 MB) for WASM imports and stored-story extraction, `ZipLimits.Docx` (2,000, 128 MB, 256 MB) before DocX loads a manuscript. A refused file shows "The file is too large to import." |
+| Q16 | The owner asked for more attractive library cards and dialogs with shadowed edges. | **Decided by the owner, styled by implementer:** story cards show a book cover colored by the story's Style with the title's initial, a two-line title, a Style chip and "Edited …"; the whole card opens the story. Dialogs get a 16 px radius, a layered shadow and a lighter mask. |
