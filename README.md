@@ -154,6 +154,11 @@ Serve `publish/wwwroot` from any static file server. The server must:
 
 No file is loaded from a CDN: the ONNX runtime, the model and the fonts are in the publish output.
 
+## License
+
+AI StoryBuilders V2 is released under the [MIT License](LICENSE). The third-party packages below keep their own
+licenses.
+
 ## Third-party licenses
 
 Most packages are MIT, Apache-2.0 or BSD. Two are not, and both allow only non-commercial use:
