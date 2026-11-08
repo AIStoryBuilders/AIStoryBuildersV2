@@ -84,9 +84,10 @@ a { color: var(--asb-accent); }
 h3.asb-sec { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; color: var(--asb-ink); }
 .asb-sub { font-size: 13px; color: var(--asb-muted); margin: 0 0 20px; }
 .asb-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; align-items: center; }
-.asb-footer { padding: 12px 20px; border-top: 1px solid var(--asb-line); background: var(--asb-panel);
-  font-size: 12px; color: var(--asb-muted); }
+.asb-footer { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 12px 20px;
+  border-top: 1px solid var(--asb-line); background: var(--asb-panel); font-size: 12px; color: var(--asb-muted); }
 .asb-footer a { color: var(--asb-muted); }
+.asb-footer-build { text-align: right; white-space: nowrap; }
 
 /* Radzen buttons: the design's rounded, bold style. */
 .rz-button, .rz-button .rz-button-text { border-radius: 8px; font-weight: 600; text-transform: none; letter-spacing: 0; font-family: var(--asb-ui-font); }

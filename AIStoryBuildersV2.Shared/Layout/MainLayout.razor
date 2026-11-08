@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject AppMetadata AppMetadata
 
 <RadzenTheme Theme="material" />
 
@@ -25,5 +26,6 @@
     </main>
     <footer class="asb-footer">
         <a href="https://BlazorData.net" target="_blank" rel="noopener">© BlazorData.net</a>
+        <span class="asb-footer-build">Build @AppMetadata.Version</span>
     </footer>
 </div>
