@@ -116,16 +116,16 @@ public class StoryChatService(
         """;
 
     /// <summary>
-    /// Plan Q21: added when Search knowledgebase is unchecked but the story has KB pages. Only the delete tools are
+    /// Plan Q21: added when Include Knowledgebase is unchecked but the story has KB pages. Only the delete tools are
     /// offered then, so the model can't read pages; it works from the paths the user gives.
     /// </summary>
     internal const string KnowledgeBaseDeletePrompt = """
 
-        The story has a knowledge base, but Search knowledgebase is off, so you can't read or search its pages.
+        The story has a knowledge base, but Include Knowledgebase is off, so you can't read or search its pages.
         If the user asks to delete a knowledge base page or folder, use kb_delete_page or kb_delete_folder with
         the path the user gives (for example "Lore/Necklace.md" or "Lore"). Each delete is only a proposal that
         the user applies or discards. For anything else in the knowledge base, ask the user to check
-        Search knowledgebase.
+        Include Knowledgebase.
         """;
 
     static readonly HashSet<string> MutationTools = new(StringComparer.OrdinalIgnoreCase)
@@ -228,7 +228,7 @@ public class StoryChatService(
     }
 
     /// <summary>
-    /// Plan Q21: <c>kb_delete_page</c> and <c>kb_delete_folder</c>, offered even when Search knowledgebase is unchecked,
+    /// Plan Q21: <c>kb_delete_page</c> and <c>kb_delete_folder</c>, offered even when Include Knowledgebase is unchecked,
     /// or none when the KB is empty.
     /// </summary>
     protected virtual async Task<IList<AITool>> KnowledgeBaseDeleteToolsAsync(string storyTitle, CancellationToken ct)

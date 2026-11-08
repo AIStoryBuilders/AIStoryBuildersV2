@@ -293,7 +293,7 @@ Use the **Chat** tab to ask questions about your story, check for problems, or a
 
 1. Click the **Chat** tab. It's the last tab, to the right of **Knowledgebase**.
 2. Pick a model from the list. This choice is only for this chat; it doesn't change your default model.
-3. Check **Search knowledgebase** if the answer may be in your knowledge base pages, or if you want the chat to edit them. Deleting a page or folder works either way.
+3. Check **Include Knowledgebase** if the answer may be in your knowledge base pages, or if you want the chat to edit them. Deleting a page or folder works either way.
 4. Type a question in **Ask about your story...**. For example: *Are there any orphaned characters?* or *Tell me about the main characters*.
 5. Press **Enter** or click **Send**. Press **Shift+Enter** for a new line.
 
@@ -318,7 +318,7 @@ If you ask for a change, such as *Add a new character named Captain Rourke*, the
 
 ### Edit knowledge base pages from the chat
 
-With **Search knowledgebase** checked, the chat can edit every page in your knowledge base, in any folder. Ask it to add a page, rewrite a page or delete one. For example: *Add to the Hrafnkel page that he forged the Necklace* or *Create a page Places/Village.md about the fjord village*.
+With **Include Knowledgebase** checked, the chat can edit every page in your knowledge base, in any folder. Ask it to add a page, rewrite a page or delete one. For example: *Add to the Hrafnkel page that he forged the Necklace* or *Create a page Places/Village.md about the fjord village*.
 
 Each edit is a **Proposed change** card, such as **Proposed change · kb_update_page**, just like a story change. **Details** shows the page's full new text. Nothing changes until you click **Apply**.
 
@@ -338,9 +338,9 @@ Each change is a **Proposed change** card, such as **Proposed change · kb_renam
 
 If the knowledge base is empty, create the first page there; the chat can't see an empty knowledge base.
 
-### Delete pages and folders with Search knowledgebase off
+### Delete pages and folders with Include Knowledgebase off
 
-Deleting works even when **Search knowledgebase** is unchecked. Give the exact path, for example *Delete the page Lore/Necklace.md* or *Delete the folder Drafts*. With the box unchecked, the chat can't read or search your pages, so it can't find a page by its title or content, and it can't create, rewrite, rename or move anything. Check the box for those.
+Deleting works even when **Include Knowledgebase** is unchecked. Give the exact path, for example *Delete the page Lore/Necklace.md* or *Delete the folder Drafts*. With the box unchecked, the chat can't read or search your pages, so it can't find a page by its title or content, and it can't create, rewrite, rename or move anything. Check the box for those.
 
 The delete is still a **Proposed change** card, and nothing is deleted until you click **Apply**.
 
@@ -390,7 +390,7 @@ Use this to restore a backup or open a story exported from another computer.
 
 ## 13. Build a knowledge base
 
-Each story can have a knowledge base: your own Markdown notes, such as world history, magic rules or research. The pages are separate from the characters, locations and timelines. Link pages to each other with `[[Page name]]`. The AI reads them when you check **Search knowledgebase** in the AI prompt or in the chat, and the chat can also propose edits to them (see [Edit knowledge base pages from the chat](#edit-knowledge-base-pages-from-the-chat)).
+Each story can have a knowledge base: your own Markdown notes, such as world history, magic rules or research. The pages are separate from the characters, locations and timelines. Link pages to each other with `[[Page name]]`. The AI reads them when you check **Search knowledgebase** in the AI prompt or **Include Knowledgebase** in the chat, and the chat can also propose edits to them (see [Edit knowledge base pages from the chat](#edit-knowledge-base-pages-from-the-chat)).
 
 ### Create a page
 
@@ -492,7 +492,7 @@ Most problems show a message in the top-right corner, like this one:
 | "Synopsis is required" | A new chapter needs a synopsis. | Type a short synopsis. |
 | "Paragraph content is required" | You saved an empty section. | Type some text, or use **Delete section**. |
 | **Generate** finishes but the section is empty. | The provider returned an error the app couldn't recover from. | Click **Undo**, then try again or pick another model. Check **Logs** for details. |
-| **Search knowledgebase** is greyed out: "This story's knowledge base is empty" | The story has no knowledge base pages. | Add a page on the **Knowledgebase** tab. |
+| **Search knowledgebase** (AI prompt) or **Include Knowledgebase** (chat) is greyed out: "This story's knowledge base is empty" | The story has no knowledge base pages. | Add a page on the **Knowledgebase** tab. |
 | "The knowledge base search timed out. The paragraph was written without it." | The knowledge base search took too long. | The text was still written. Generate again if you need the notes used. |
 | A chat answer shows "Error: `<message>`" and **Retry**. | The provider returned an error. | Click **Retry**. If it keeps failing, check **Settings** and **Logs**. |
 | "This change is no longer pending." | That proposed change was already applied or discarded. | Ask the chat for the change again. |

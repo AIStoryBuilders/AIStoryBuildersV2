@@ -196,10 +196,10 @@ public class SearchKnowledgeBaseTests : IDisposable
         Assert.Equal(["kb_delete_folder", "kb_delete_page"],
             _chat.Options[0]!.Tools!.Select(t => t.Name).Where(n => n.StartsWith("kb_", StringComparison.Ordinal)).Order(StringComparer.Ordinal));
         Assert.DoesNotContain("Use kb_search_pages", _chat.Requests[0][0].Text);
-        Assert.Contains("Search knowledgebase is off", _chat.Requests[0][0].Text);
+        Assert.Contains("Include Knowledgebase is off", _chat.Requests[0][0].Text);
         Assert.Contains(_chat.Options[1]!.Tools!, t => t.Name == "kb_read_page");
         Assert.Contains("The story has a knowledge base.", _chat.Requests[1][0].Text);
-        Assert.DoesNotContain("Search knowledgebase is off", _chat.Requests[1][0].Text);
+        Assert.DoesNotContain("Include Knowledgebase is off", _chat.Requests[1][0].Text);
     }
 
     [Fact]

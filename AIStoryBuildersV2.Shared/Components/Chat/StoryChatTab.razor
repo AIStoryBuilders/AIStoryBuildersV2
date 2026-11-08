@@ -17,7 +17,7 @@
         <ModelPicker @bind-Value="model" Disabled="streaming" Style="width:220px" Id="chat-model" />
         <span class="row asb-chat-kb" title="@(kbEmpty ? "This story's knowledge base is empty" : null)">
             <RadzenCheckBox TValue="bool" Value="searchKb" ValueChanged="OnSearchKbChanged" Name="chat-kb" Disabled="@(kbEmpty || streaming)" />
-            <RadzenLabel Text="Search knowledgebase" Component="chat-kb" />
+            <RadzenLabel Text="Include Knowledgebase" Component="chat-kb" />
         </span>
         <span class="asb-sp"></span>
         <button class="asb-icon-btn-plain" title="Clear conversation" aria-label="Clear conversation"
