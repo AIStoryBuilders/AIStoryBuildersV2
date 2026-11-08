@@ -200,6 +200,9 @@ public sealed class KnowledgeBaseTools(IStoryKnowledgeBase kb, int maxToolResult
     public const string MoveFolderTool = Prefix + "move_folder";
     public const string DeleteFolderTool = Prefix + "delete_folder";
 
+    /// <summary>Plan Q21: the tools Story Chat gets even when Search knowledgebase is unchecked.</summary>
+    public static readonly IReadOnlySet<string> DeleteToolNames = new HashSet<string>(StringComparer.Ordinal) { DeletePageTool, DeleteFolderTool };
+
     public static readonly IReadOnlySet<string> FolderToolNames =
         new HashSet<string>(StringComparer.Ordinal) { CreateFolderTool, RenameFolderTool, MoveFolderTool, DeleteFolderTool };
 

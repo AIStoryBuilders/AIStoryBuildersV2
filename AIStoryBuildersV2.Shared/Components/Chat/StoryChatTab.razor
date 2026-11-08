@@ -241,7 +241,7 @@
         {
             var result = await Chat.ApplyPendingAsync(Story.Title, p.Id);
             if (result is null) Bubbles.Add(new ChatBubble { Text = "This change is no longer pending." });
-            else if (result.Success) Bubbles.Add(new ChatBubble { Text = "Applied: " + p.Preview.Summary });
+            else if (result.Success) Bubbles.Add(new ChatBubble { Text = "Applied: " + AppliedSummary(p, result) });
             else Bubbles.Add(new ChatBubble { Text = $"Could not apply the change: {result.Error}" });
         }
         finally
@@ -250,6 +250,15 @@
             pending = Chat.PendingChanges(Story.Title);
         }
     }
+
+    /// <summary>
+    /// The proposal's summary, or the applied result's when it adds to it (a KB folder rename or move adds
+    /// "Links updated in N pages", plan Q20). Other results keep the proposal's wording.
+    /// </summary>
+    internal static string AppliedSummary(PendingMutation p, MutationResult result) =>
+        !string.IsNullOrEmpty(result.Summary) && result.Summary.StartsWith(p.Preview.Summary, StringComparison.Ordinal)
+            ? result.Summary
+            : p.Preview.Summary;
 
     void Discard(PendingMutation p)
     {

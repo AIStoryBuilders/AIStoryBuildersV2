@@ -192,10 +192,61 @@ public class SearchKnowledgeBaseTests : IDisposable
         await SendAsync(chat, kb: false);
         await SendAsync(chat, kb: true);
 
-        Assert.DoesNotContain(_chat.Options[0]!.Tools!, t => t.Name.StartsWith("kb_", StringComparison.Ordinal));
-        Assert.DoesNotContain("knowledge base", _chat.Requests[0][0].Text, StringComparison.OrdinalIgnoreCase);
+        // Q21: unchecked offers only the two deletes, and no read tool or other edit.
+        Assert.Equal(["kb_delete_folder", "kb_delete_page"],
+            _chat.Options[0]!.Tools!.Select(t => t.Name).Where(n => n.StartsWith("kb_", StringComparison.Ordinal)).Order(StringComparer.Ordinal));
+        Assert.DoesNotContain("Use kb_search_pages", _chat.Requests[0][0].Text);
+        Assert.Contains("Search knowledgebase is off", _chat.Requests[0][0].Text);
         Assert.Contains(_chat.Options[1]!.Tools!, t => t.Name == "kb_read_page");
         Assert.Contains("The story has a knowledge base.", _chat.Requests[1][0].Text);
+        Assert.DoesNotContain("Search knowledgebase is off", _chat.Requests[1][0].Text);
+    }
+
+    [Fact]
+    public async Task Unchecked_chat_can_still_propose_deleting_a_page_and_a_folder()
+    {
+        var kb = await SeedAsync();
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c1", "kb_delete_page", ("path", "Hrafnkel.md")),
+                           ScriptedChatClient.Call("c2", "kb_delete_folder", ("path", "Lore")))
+             .EnqueueText("Proposed.");
+        var chat = Chat();
+
+        await SendAsync(chat, kb: false);
+
+        var pending = chat.PendingChanges(Title);
+        Assert.Equal(["kb_delete_page", "kb_delete_folder"], pending.Select(p => p.ToolName));
+        Assert.True(await kb.Workspace.ExistsAsync("Hrafnkel.md"));
+        foreach (var p in pending) Assert.True((await chat.ApplyPendingAsync(Title, p.Id))!.Success);
+        Assert.False(await kb.Workspace.ExistsAsync("Hrafnkel.md"));
+        Assert.False(await kb.Workspace.ExistsAsync("Lore"));
+    }
+
+    [Fact]
+    public async Task Unchecked_chat_cannot_read_or_change_pages_other_than_deleting()
+    {
+        await SeedAsync();
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c1", "kb_read_page", ("path", "Lore/Necklace.md")),
+                           ScriptedChatClient.Call("c2", "kb_update_page", ("path", "Hrafnkel.md"), ("markdown", "# x\n")))
+             .EnqueueText("I can't.");
+        var chat = Chat();
+
+        await SendAsync(chat, kb: false);
+
+        Assert.Empty(chat.PendingChanges(Title));
+        var results = _chat.Requests[1].SelectMany(m => m.Contents).OfType<FunctionResultContent>().Select(r => r.Result?.ToString()).ToList();
+        Assert.All(results, r => Assert.Contains("Unknown tool", r));
+        Assert.DoesNotContain(results, r => r!.Contains("nine silver beads"));
+    }
+
+    [Fact]
+    public async Task Unchecked_chat_with_an_empty_knowledge_base_offers_no_kb_tools()
+    {
+        _chat.EnqueueText("ok");
+
+        await SendAsync(Chat(), kb: false);
+
+        Assert.DoesNotContain(_chat.Options[0]!.Tools!, t => t.Name.StartsWith("kb_", StringComparison.Ordinal));
+        Assert.DoesNotContain("knowledge base", _chat.Requests[0][0].Text, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -310,8 +361,11 @@ public class SearchKnowledgeBaseTests : IDisposable
         await kb.Workspace.SavePageAsync("Freya.md", "Freya wears [[Lore/Necklace]].\n", 0);
         var chat = await ProposeAsync(ScriptedChatClient.Call("c1", "kb_rename_folder", ("path", "Lore"), ("newName", "Artifacts")));
 
-        Assert.Contains("Lore to Artifacts", Assert.Single(chat.PendingChanges(Title)).Preview.Summary);
-        await ApplyAllAsync(chat);
+        var proposal = Assert.Single(chat.PendingChanges(Title));
+        Assert.Contains("Lore to Artifacts", proposal.Preview.Summary);
+        var result = await chat.ApplyPendingAsync(Title, proposal.Id);
+        Assert.Equal(proposal.Preview.Summary + ". Links updated in 1 pages",
+            AIStoryBuildersV2.Shared.Components.Chat.StoryChatTab.AppliedSummary(proposal, result!));
 
         Assert.True(await kb.Workspace.ExistsAsync("Artifacts/Necklace.md"));
         Assert.False(await kb.Workspace.ExistsAsync("Lore"));
@@ -474,6 +528,36 @@ public class SearchKnowledgeBaseTests : IDisposable
         Assert.Empty(chat.PendingChanges(Title));
         var result = _chat.Requests[1].SelectMany(m => m.Contents).OfType<FunctionResultContent>().Single();
         Assert.Contains(error, result.Result?.ToString());
+    }
+
+    [Theory]
+    [InlineData("append to page Hrafnkel.md: He forged the Necklace.", "kb_update_page")]
+    [InlineData("create a Village page", "kb_create_page")]
+    [InlineData("delete page Hrafnkel.md", "kb_delete_page")]
+    [InlineData("create folder Places/North", "kb_create_folder")]
+    [InlineData("rename folder Lore to Artifacts", "kb_rename_folder")]
+    [InlineData("move folder Lore to root", "kb_create_folder")]   // Lore is already at the root: refused, so no card
+    [InlineData("delete folder Lore", "kb_delete_folder")]
+    public async Task The_debug_fake_provider_drives_each_kb_proposal(string message, string tool)
+    {
+        await SeedAsync();
+        var chat = new StoryChatService(new GraphQueryService(_f.GraphCache), new GraphMutationService(_f.Service, new GraphBuilder(), _f.GraphCache),
+            new FakeChatClientProvider(new AIStoryBuildersV2.Shared.Llm.FakeChatClient()), new StubSettings(), _f.Service, _f.GraphCache, _f.Log, _kbs);
+
+        var answer = "";
+        await foreach (var chunk in chat.SendMessageAsync(new StoryChatRequest(Title, message, "fake", true))) answer += chunk;
+
+        var pending = chat.PendingChanges(Title);
+        if (message.StartsWith("move", StringComparison.Ordinal))
+        {
+            Assert.Empty(pending);
+            Assert.Contains("already in that folder", answer);
+            return;
+        }
+        Assert.Equal(tool, Assert.Single(pending).ToolName);
+        Assert.Contains("Click Apply", answer);
+        Assert.True((await chat.ApplyPendingAsync(Title, pending[0].Id))!.Success);
+        if (tool == "kb_update_page") Assert.EndsWith("He forged the Necklace.\n", await PageAsync("Hrafnkel.md"));
     }
 
     [Fact]

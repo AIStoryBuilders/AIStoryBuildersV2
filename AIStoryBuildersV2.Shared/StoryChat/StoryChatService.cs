@@ -35,6 +35,7 @@ public interface IStoryChatService
 /// V1's StoryChatService on the shared client (D10). Every turn gets its client from <see cref="IChatClientProvider"/>, runs
 /// inside <see cref="StoryGraphContext"/> for its story (D26), and offers the graph tools plus, when the user asked for it,
 /// the <c>kb_</c> tools: read tools plus page and folder changes that, like graph mutations, only propose (D14, SEC-001).
+/// When the user did not ask for it, only the page and folder deletes are offered (Q21).
 /// </summary>
 public class StoryChatService(
     IGraphQueryService queryService,
@@ -112,6 +113,19 @@ public class StoryChatService(
         and kb_delete_page. You can also manage folders with kb_create_folder, kb_rename_folder,
         kb_move_folder and kb_delete_folder (use kb_list_folder first). Like story changes, each edit is only
         a proposal that the user applies or discards.
+        """;
+
+    /// <summary>
+    /// Plan Q21: added when Search knowledgebase is unchecked but the story has KB pages. Only the delete tools are
+    /// offered then, so the model can't read pages; it works from the paths the user gives.
+    /// </summary>
+    internal const string KnowledgeBaseDeletePrompt = """
+
+        The story has a knowledge base, but Search knowledgebase is off, so you can't read or search its pages.
+        If the user asks to delete a knowledge base page or folder, use kb_delete_page or kb_delete_folder with
+        the path the user gives (for example "Lore/Necklace.md" or "Lore"). Each delete is only a proposal that
+        the user applies or discards. For anything else in the knowledge base, ask the user to check
+        Search knowledgebase.
         """;
 
     static readonly HashSet<string> MutationTools = new(StringComparer.OrdinalIgnoreCase)
@@ -206,6 +220,25 @@ public class StoryChatService(
             var tools = new KnowledgeBaseTools(kb).CreateReadOnly();
             foreach (var t in KnowledgeBaseEditTools(storyTitle)) tools.Add(t);
             return tools;
+        }
+        finally
+        {
+            await knowledgeBases.CloseAsync(storyTitle);
+        }
+    }
+
+    /// <summary>
+    /// Plan Q21: <c>kb_delete_page</c> and <c>kb_delete_folder</c>, offered even when Search knowledgebase is unchecked,
+    /// or none when the KB is empty.
+    /// </summary>
+    protected virtual async Task<IList<AITool>> KnowledgeBaseDeleteToolsAsync(string storyTitle, CancellationToken ct)
+    {
+        if (knowledgeBases is null) return [];
+        var kb = await knowledgeBases.OpenAsync(storyTitle, ct);
+        try
+        {
+            if (await kb.IsEmptyAsync(ct)) return [];
+            return KnowledgeBaseEditTools(storyTitle).Where(t => KnowledgeBaseTools.DeleteToolNames.Contains(t.Name)).ToList();
         }
         finally
         {
@@ -308,6 +341,16 @@ public class StoryChatService(
             {
                 foreach (var t in kbTools) tools.Add(t);
                 systemPrompt += KnowledgeBasePrompt;
+            }
+        }
+        else
+        {
+            // Q21: deleting pages and folders is always allowed; reading and other edits need the checkbox.
+            var deleteTools = await KnowledgeBaseDeleteToolsAsync(request.StoryTitle, ct);
+            if (deleteTools.Count > 0)
+            {
+                foreach (var t in deleteTools) tools.Add(t);
+                systemPrompt += KnowledgeBaseDeletePrompt;
             }
         }
         var byName = tools.OfType<AIFunction>().ToDictionary(t => t.Name, StringComparer.Ordinal);

@@ -293,7 +293,7 @@ Use the **Chat** tab to ask questions about your story, check for problems, or a
 
 1. Click the **Chat** tab. It's the last tab, to the right of **Knowledgebase**.
 2. Pick a model from the list. This choice is only for this chat; it doesn't change your default model.
-3. Check **Search knowledgebase** if the answer may be in your knowledge base pages, or if you want the chat to edit them.
+3. Check **Search knowledgebase** if the answer may be in your knowledge base pages, or if you want the chat to edit them. Deleting a page or folder works either way.
 4. Type a question in **Ask about your story...**. For example: *Are there any orphaned characters?* or *Tell me about the main characters*.
 5. Press **Enter** or click **Send**. Press **Shift+Enter** for a new line.
 
@@ -337,6 +337,12 @@ Each change is a **Proposed change** card, such as **Proposed change · kb_renam
 - The **Knowledgebase** tab shows the new folders the next time you open it.
 
 If the knowledge base is empty, create the first page there; the chat can't see an empty knowledge base.
+
+### Delete pages and folders with Search knowledgebase off
+
+Deleting works even when **Search knowledgebase** is unchecked. Give the exact path, for example *Delete the page Lore/Necklace.md* or *Delete the folder Drafts*. With the box unchecked, the chat can't read or search your pages, so it can't find a page by its title or content, and it can't create, rewrite, rename or move anything. Check the box for those.
+
+The delete is still a **Proposed change** card, and nothing is deleted until you click **Apply**.
 
 To start over, click the circular arrow (**Clear conversation**). The conversation is also cleared when you close the story.
 
