@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using AIStoryBuildersV2.Shared.Knowledge;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -194,33 +193,7 @@ public sealed class GraphAndWorkspaceTests : IDisposable
         public Task<bool> ExistsAsync(string path, CancellationToken ct = default) => Task.FromResult(pages.ContainsKey(path));
     }
 
-    [Fact]
-    public async Task Rebuild_FiveThousandPages_UnderTwoSeconds()
-    {
-        // Measured over an in-memory store so disk and antivirus speed don't decide the result.
-        var pages = new Dictionary<string, string>();
-        for (var f = 0; f < 50; f++)
-            for (var i = 0; i < 100; i++)
-                pages[$"F{f}/Page {i}.md"] =
-                    $"---\ntitle: Page {f}-{i}\ntags: [t{i % 7}]\n---\n# Page {f}-{i}\n\nLinks to [[Page {(i + 1) % 100}]] and [[F{(f + 1) % 50}/Page {i}]] and [[Missing {i}]].\n";
-        var graph = new KnowledgeGraphService(new MemoryStore(pages));
-        await new KnowledgeGraphService(new MemoryStore(pages.Take(50).ToDictionary())).RebuildAsync(); // warm up
-
-        var sw = Stopwatch.StartNew();
-        var stats = await graph.RebuildAsync();
-        sw.Stop();
-
-        Assert.Equal(5000, stats.Pages);
-        Assert.Equal(15000, stats.Links);
-        Assert.Equal(5000, stats.Unresolved);
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(2), $"Rebuild took {sw.Elapsed.TotalMilliseconds:N0} ms");
-
-        // Updating one page re-resolves the graph without a full re-read.
-        sw.Restart();
-        await graph.UpdatePageAsync("F0/Page 0.md", "# Changed\n[[Missing 0]]", 2);
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(2), $"Update took {sw.Elapsed.TotalMilliseconds:N0} ms");
-        Assert.Equal(14998, (await graph.GetStatsAsync()).Links);
-    }
+    // The 5,000-page rebuild timing test is in KnowledgePerformanceTests, which runs without parallel tests.
 
     // ------------------------------------------------------------ rename and move
 

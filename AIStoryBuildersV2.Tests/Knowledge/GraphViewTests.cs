@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using AIStoryBuildersV2.Shared.Knowledge;
 
 namespace AIStoryBuildersV2.Tests;
@@ -112,23 +111,7 @@ public class GraphViewTests
                 Assert.True(Math.Abs(n.X - m.X) + Math.Abs(n.Y - m.Y) > 10, $"{n.Id} and {m.Id} overlap");
     }
 
-    [Fact]
-    public async Task Layout_OfFourHundredNodes_IsQuick()
-    {
-        var pages = new Dictionary<string, string>();
-        for (var i = 0; i < 400; i++) pages[$"F{i % 8}/P{i}.md"] = $"# P{i}\n[[P{(i + 1) % 400}]] [[P{(i * 7) % 400}]]";
-        var snapshot = await SnapshotAsync(pages);
-
-        var sw = Stopwatch.StartNew();
-        var view = GraphViewBuilder.Build(snapshot, new GraphViewOptions());
-        sw.Stop();
-
-        Assert.Equal(400, view.Nodes.Count);
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(3), $"Layout took {sw.ElapsedMilliseconds} ms");
-        var (_, _, width, height) = view.Bounds();
-        Assert.InRange(width, 300, 20000);
-        Assert.InRange(height, 300, 20000);
-    }
+    // The 400-node layout timing test is in KnowledgePerformanceTests, which runs without parallel tests.
 
     [Fact]
     public async Task HiddenFolders_DropTheirPages_ButStayListed()
