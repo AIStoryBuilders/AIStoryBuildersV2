@@ -9,7 +9,7 @@ This file contains no secrets. Supply keys only through environment variables or
 |---|---|---|
 | Windows | 10.0.19041 or later | The MAUI app's Windows TFM is `net11.0-windows10.0.19041.0` |
 | .NET SDK | `11.0.100-rc.3.26522.148` | Pinned in `global.json` after T0 (plan §6.6), with `allowPrerelease: true`. The .NET 10 SDKs can stay installed. |
-| MAUI workload | Must match the rc.3 SDK | Today the workloads are **managed by Visual Studio 18.11** at `11.0.0-preview.6.26360.8` (manifest band `11.0.100-preview.6`), so `dotnet workload update` cannot change them. See §2. |
+| MAUI workload | `maui-windows 11.0.0-rc.2.26505.5/11.0.100-rc.2` | CLI-managed, installed by SDK 11.0.100-rc.3 (`dotnet workload list`). Before T0 the workloads were managed by Visual Studio 18.11 at preview.6; §2 says how that was fixed. |
 | Visual Studio | 18.x with the .NET MAUI workload | Optional for the Web app, practical for MAUI debugging |
 | Aspire | `Aspire.AppHost.Sdk 13.6.4`, `Aspire.Hosting.Maui 13.6.4-preview.1.26523.11` | Dev-time only (plan G1). The `aspire` CLI is optional. |
 | Node.js | not required | Use any static file server for the published WASM smoke test (§4). `npx serve -s` is one option. |
@@ -25,6 +25,8 @@ dotnet workload list
 ```
 
 ## 2. Workloads (T0)
+
+On the development machine this is done: a CLI-managed `maui-windows` workload is installed (§1). On a new machine, use one of these:
 
 1. Open **Visual Studio Installer**, update Visual Studio to a build that includes .NET 11 RC 3 MAUI, and keep the **.NET MAUI** workload selected.
 2. Alternatively, install a CLI-managed workload for the rc.3 SDK. Run it from a folder without a `global.json`, or after T0 has pinned 11.0:
@@ -45,7 +47,7 @@ Only `maui-windows` is needed by default. The mobile targets are built only with
 | MAUI, without Aspire | Visual Studio: set the startup project to `AIStoryBuildersV2` and the target to **Windows Machine**. CLI: `dotnet build AIStoryBuildersV2/AIStoryBuildersV2.csproj -f net11.0-windows10.0.19041.0 -t:Run` | A desktop window |
 | Both, with Aspire | `aspire run` from the repo root (it reads `aspire.config.json`), or run `AIStoryBuildersV2.AppHost` | Dashboard on the AppHost profile ports. Resources: `aistorybuildersv2-windows` (start it from the dashboard) and `web`. |
 
-`AIStoryBuildersV2/AIStoryBuildersV2.csproj.user` still names `net10.0-windows10.0.19041.0` as the active debug framework. Visual Studio rewrites it after T0. The file is user-local, so don't commit changes to it.
+Visual Studio may create `AIStoryBuildersV2/AIStoryBuildersV2.csproj.user` to remember the active debug framework (it should be `net11.0-windows10.0.19041.0`). The file is user-local and not in the repo, so don't commit it.
 
 ## 4. Publishing and serving the WASM app
 
@@ -67,7 +69,7 @@ An agent can't complete these on its own. Leave them unchecked and report them (
 |---|---|---|
 | T0 | Workload update | §2 |
 | T2b | Golden fixtures | Copy `AIStoryBuildersV2.Tests/Fixtures/V1Story/before/` into `Documents\AIStoryBuilders\` on a machine with V1 installed. Do each operation in [Test-Data.md](Test-Data.md) §3 in the V1 UI. Copy each result back to `after-<operation>/` and commit it. **Back up your own V1 stories first**, and remove the fixture story afterwards. |
-| T5, T6, T7b, T16, T17 | Live provider checks | Set the §6 variables, or enter a key in Settings |
+| T5, T6, T7b, T16 | Live provider checks | Set the §6 variables, or enter a key in Settings |
 | T6 | A model that fails the probe | Run Ollama locally with a model that has no tool support, set `OLLAMA_ORIGINS` (§7), and try to verify it |
 | T9a, T10a, T18 | V1 coexistence | Open a V2-edited story in V1 and the reverse, and import V2's `.stybld` into V1 |
 | T11, T15 | Visual match | Compare with the artboards at 1440 px |
@@ -83,6 +85,12 @@ Live tests are skipped unless these are set. Never commit values.
 | `ASB_LIVE_KEY` | `<api-key>` | same |
 | `ASB_LIVE_MODEL` | `<model-id>` (must be one that passes the probe) | same |
 | `ASB_LIVE_ENDPOINT` | `https://<resource>.openai.azure.com/` or `http://<ollama-host>:11434/` | Azure and Ollama only |
+
+One more variable is not a live test. It rewrites committed test fixtures, so review the diff before committing:
+
+| Variable | Value | Used by |
+|---|---|---|
+| `ASB_REGENERATE_FIXTURES` | `1` | Rewrites `Fixtures/V1Story/before/` (`StoryReadTests`), `Fixtures/V1Story/graph` (`GraphTests`) and `Fixtures/embeddings.json` (`EmbeddingTests`). Those tests also write the graph and embeddings files when they are missing. |
 
 PowerShell, for the current session only:
 

@@ -34,7 +34,7 @@ public interface IStoryChatService
 /// <summary>
 /// V1's StoryChatService on the shared client (D10). Every turn gets its client from <see cref="IChatClientProvider"/>, runs
 /// inside <see cref="StoryGraphContext"/> for its story (D26), and offers the graph tools plus, when the user asked for it,
-/// the <c>kb_</c> tools: read tools and page edits that, like graph mutations, only propose (D14, SEC-001).
+/// the <c>kb_</c> tools: read tools plus page and folder changes that, like graph mutations, only propose (D14, SEC-001).
 /// </summary>
 public class StoryChatService(
     IGraphQueryService queryService,
@@ -192,8 +192,8 @@ public class StoryChatService(
     }
 
     /// <summary>
-    /// The kb_ tools for <paramref name="storyTitle"/>: the read tools plus the page-edit proposals, or none when its KB is
-    /// empty (D14).
+    /// The kb_ tools for <paramref name="storyTitle"/>: the read tools plus the page and folder proposals, or none when its
+    /// KB is empty (D14).
     /// </summary>
     protected virtual async Task<IList<AITool>> KnowledgeBaseToolsAsync(string storyTitle, CancellationToken ct)
     {

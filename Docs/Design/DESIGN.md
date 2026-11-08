@@ -10,7 +10,7 @@ should implement the Blazor UI in `AIStoryBuildersV2.Shared` to match the screen
 | File | Screen | Notes |
 |------|--------|-------|
 | `Library.dc.html` | **Library / Home** (+ Settings, Logs, Utility) | App entry point |
-| `StoryWorkspace.dc.html` | **Story Workspace** (tabbed dialog) | The main editing surface |
+| `StoryWorkspace.dc.html` | **Story Workspace** (a page with tabs; the artboard draws it as a dialog) | The main editing surface |
 | `ManuscriptEditor.dc.html` | **Manuscript Editor** (single page) | The "Chapters" experience, full-screen |
 | `canvas.json` | Canvas index | Positions/titles of the three artboards |
 
@@ -40,6 +40,8 @@ Defined on the root of every artboard; reuse these as CSS variables (see
 ```
 
 Fonts: **Inter** for UI, **Newsreader** (serif) for manuscript/body prose and entity names.
+Newsreader is not vendored yet, so prose falls back to `Georgia, serif` until a `woff2` is added
+(plan §14 Q12).
 
 ### Radzen-style button palette (matches the app's `ButtonStyle`)
 
@@ -63,16 +65,18 @@ HTML + inline SVG only because they are static mockups.
 
 ## 1. Library / Home  (`Library.dc.html`)
 
-Top bar: the AIStoryBuilders logo + wordmark, then a `RadzenMenu` with **Home · Logs · Utility ·
-Settings**. The selected menu item swaps the page body between four views.
+Top bar: the AIStoryBuilders logo + wordmark, then a `RadzenMenu`. The artboard shows **Home · Logs ·
+Utility · Settings**; the app has **Home · Logs · Settings · Help** (Utility removed, D23; Help added,
+plan Q18). The selected menu item swaps the page body.
 
 - **Home** — action row: **New Story** (success, `add`), **Import Story** (light, `publish` — opens
   a `.stybld` project), **Import docx / pdf / txt** (info, `description` — manuscript import with a
   progress bar). Below: a grid of **story cards**, each a cover + title + meta + **Select** button.
   New Story opens the New Story dialog (Title ≤20 chars, Synopsis ≤1000, Chapters 1–3, AI Model,
   **Create Story**).
-- **Settings** — AI Provider (`OpenAI`, `Azure OpenAI`, `Anthropic`, `Google AI`), API Key, optional
-  Azure Endpoint + Api Version, Default AI Model (with a **refresh** button that lists models from
+- **Settings** — AI Provider (`OpenAI`, `Azure OpenAI`, `Anthropic`, `Google AI`, `Ollama`; the
+  artboard omits Ollama, UI-Behavior-Spec §6 has the full form), API Key, optional
+  Azure Endpoint + Api Version (or an Ollama endpoint), Default AI Model (with a **refresh** button that lists models from
   the provider), a note that *embeddings are handled locally*, and **Save**. Before a key is entered,
   a "get an API key" secondary button links to the provider's console.
 - **Logs** — **Export Log** / **Clear Log** + a table of log entries (date + message).

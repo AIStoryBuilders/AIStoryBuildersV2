@@ -12,7 +12,7 @@ Everything here is fictional.
 | §4 Reader-tolerance fixtures | T2a |
 | §5 Probe fixtures | T6 |
 | §6 Knowledge Base fixture | T14–T16 |
-| §7 Expected AI outcomes | T13, T16 |
+| §7 Expected AI outcomes | T13, T16, plan Q19 and Q20 (chat KB edits, tab order) |
 | §8 Embedding self-test sentences | T4 |
 
 ---
@@ -212,6 +212,8 @@ Do not call tools. Using only the tool result above, return only JSON in the for
 ## 6. Knowledge Base fixture: `Fixtures/KbStory/`
 
 This is `before/` plus a `Forgetting Baldur/KnowledgeBase/` folder. KB pages are UTF-8 without BOM, with LF line endings, the way KGB writes them.
+
+**Not committed as files.** There is no `AIStoryBuildersV2.Tests/Fixtures/KbStory/` folder. For the manual checks in §7, add these pages to a copy of `before/` in the Knowledgebase tab. The unit tests seed their own, shorter pages in code instead (for example `SearchKnowledgeBaseTests.SeedAsync` writes `Lore/Necklace.md` as "forged by Hrafnkel from nine silver beads" and `Hrafnkel.md`), so their expected text differs from this section.
 
 `KnowledgeBase/Lore/Necklace.md`:
 

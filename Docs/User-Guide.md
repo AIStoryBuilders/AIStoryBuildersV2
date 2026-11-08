@@ -333,7 +333,7 @@ Each change is a **Proposed change** card, such as **Proposed change · kb_renam
 **What you should see:**
 
 - After a rename or move, the **Applied:** message says how many pages had their links updated, so links to the moved pages keep working.
-- A delete card says how many pages and subfolders go with the folder. If you add or remove pages in that folder before you click **Apply**, the delete stops with **Could not apply the change:**, and nothing is deleted.
+- A delete card says how many pages and subfolders go with the folder. If the number of pages or subfolders in that folder changes before you click **Apply**, the delete stops with **Could not apply the change:**, and nothing is deleted.
 - The **Knowledgebase** tab shows the new folders the next time you open it.
 
 If the knowledge base is empty, create the first page there; the chat can't see an empty knowledge base.

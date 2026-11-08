@@ -107,7 +107,7 @@ Base per story.
 | App | Location |
 |-----|----------|
 | Windows (MAUI) | `Documents\AIStoryBuilders`, the same folder and file format as AI StoryBuilders V1. Settings are in the app's preferences; the API key is in Windows SecureStorage. |
-| Browser (WASM) | This browser's `localStorage`: one zipped story per key (`asb2:story:{Title}`), plus `asb2:stories`, `asb2:settings`, `asb2:log` and `asb2:db`. |
+| Browser (WASM) | This browser's `localStorage`: one zipped story per key (`asb2:story:{Title}`), plus `asb2:stories`, `asb2:settings` and `asb2:log`. |
 
 Each story can have a **Knowledge Base**: Markdown pages in `{Title}/KnowledgeBase/`. The folder is created only
 when the first page is added, so V1 never sees a change to stories that have none, and it travels with the story
@@ -161,16 +161,17 @@ licenses.
 
 ## Third-party licenses
 
-Most packages are MIT, Apache-2.0 or BSD. Two are not, and both allow only non-commercial use:
+Most packages are MIT, Apache-2.0 or BSD. One is not, and it allows only non-commercial use:
 
 | Package | Used for | License |
 |---------|----------|---------|
 | [Xceed DocX](https://github.com/xceedsoftware/DocX) 5.0.0 | Word export and `.docx` manuscript import | Xceed Community License: non-commercial use, fewer than 10 users, and the Xceed copyright notice must be shown |
-| [EPPlus](https://epplussoftware.com) 8.5.3 | Training-data Excel export | Polyform Noncommercial 1.0.0 (set in code with `ExcelPackage.License.SetNonCommercialOrganization`) |
 
-Copyright © Xceed Software Inc. (DocX). Commercial use of AI StoryBuilders V2 needs commercial licenses for
-both libraries. Others: Radzen.Blazor, Markdig, YamlDotNet, ExcelDataReader, Newtonsoft.Json and
-Blazored.LocalStorage (MIT); PdfPig and onnxruntime-web (Apache-2.0 / MIT); Microsoft.ML.OnnxRuntime (MIT).
+Copyright © Xceed Software Inc. (DocX). Commercial use of AI StoryBuilders V2 needs a commercial license for
+DocX. EPPlus and ExcelDataReader were used only by the Utility screens, which were removed (plan D23), so
+they are no longer included. Others: Radzen.Blazor, Markdig, YamlDotNet, Newtonsoft.Json,
+Blazored.LocalStorage, OllamaSharp, Microsoft.Extensions.AI, OpenAI and Azure.AI.OpenAI (MIT); DiffPlex
+(Apache-2.0); PdfPig and onnxruntime-web (Apache-2.0 / MIT); Microsoft.ML.OnnxRuntime (MIT).
 
 ## The UI is specified in `Docs/Design`
 

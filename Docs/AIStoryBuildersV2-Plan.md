@@ -26,7 +26,7 @@ Links into other repositories are relative to this file and assume the sibling c
 | **V1** | `<repos>/ADefWebserver/AIStoryBuilders` | MAUI app. **Source of truth for features and behavior.** |
 | **Online** | `<repos>/AIStoryBuilders/AIStoryBuildersOnline` | WASM port of an older V1 (it has no World Facts). Reference for browser storage and browser-safe AI clients. |
 | **KGB** | `<repos>/KnowledgeGraphBuilder` | Source of the solution structure, the AI Settings code and the Knowledge Base code |
-| **This repo** | `<repos>/AIStoryBuilders/AIStoryBuildersV2` | The V2 scaffold, currently on .NET 10 |
+| **This repo** | `<repos>/AIStoryBuilders/AIStoryBuildersV2` | V2, rebuilt from a .NET 10 scaffold onto .NET 11 (T0) |
 
 ---
 
@@ -121,7 +121,7 @@ The scaffold already has KGB's shape: a MAUI app, a WASM app, a Shared RCL, an A
 | D20 | Routes: `/` (Library), `/logs`, `/settings` (`/utility` removed, D23), `/story/{title}?tab=<tab>&p=<kbPath>`. The workspace is a page, not a dialog. | V1's dialog and boolean panels ([Index.razor](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Index.razor)) | The design has a full-page workspace with a "Close workspace" button. Deep links make KB page links work (D13). |
 | D21 | **Docx import and Word export use DocX 5.0.0 in both apps**, as Online does. `DocumentFormat.OpenXml` is dropped. | Keep OpenXml for import on MAUI | One parser path. Online proves DocX works in WASM. |
 | D22 | **Zip extraction is always manual** (`ZipArchive` entry by entry, with a Zip Slip guard). | `ZipFile.ExtractToDirectory` | It aborts the WASM runtime ([Online Index.razor:342-344](../../AIStoryBuildersOnline/Components/Pages/Index.razor)), yet Online still calls it in `ImportProject` |
-| D23 | **Superseded 2026-11-05 by the owner:** fine-tuning is no longer supported, so V1's Utility screens (fine-tuned models, training data, JSONL) and the `/utility` route are **removed** from both apps, with the model alias file (`AIStoryBuildersDatabase.json` / `asb2:db`), EPPlus and ExcelDataReader. V2 never reads or writes the alias file; V1 keeps its own copy. | Port Utility as-is (the original D23) | The owner retired fine-tuning. |
+| D23 | **Superseded 2026-11-05 by the owner:** fine-tuning is no longer supported, so V1's Utility screens (fine-tuned models, training data, JSONL) and the `/utility` route are **removed** from both apps, with the model alias file (`AIStoryBuildersDatabase.json` / `asb2:db`), EPPlus and ExcelDataReader. V2 never reads the alias file; V1 keeps its own copy. The MAUI app only creates an empty one (`{}`) when it is missing, as V1 does at startup (§8, `MauiProgram.cs`). | Port Utility as-is (the original D23) | The owner retired fine-tuning. |
 | D24 | `ServiceDefaults` stays in the solution and nothing references it, as in KGB | Delete it | Not needed at runtime. Deleting it is Q10. |
 
 ---
@@ -314,7 +314,7 @@ Implementations marked **(Shared)** live in Shared so tests can reach them (D27)
 | `IHostCapabilities` (KGB's interface, extended, §6.1) | `MauiHostCapabilities` (`IsBrowser=false`, `RootPath=<Documents>\AIStoryBuilders`) | `BrowserHostCapabilities` (`IsBrowser=true`, `RootPath` = MEMFS `MyDocuments/AIStoryBuilders`) |
 | `IStoryPersistence` | `DiskStoryPersistence` (Shared): no-op. The files *are* the store. | `ZipStoryPersistence` (Shared, over `IKeyValueStore`): zip in `localStorage`, debounced (§5.5) |
 | `IStoryLibraryStore` | `CsvStoryLibraryStore` (Shared) over `AIStoryBuildersStories.csv` (V1 format) | `LocalStorageStoryLibraryStore` (Shared): key `asb2:stories` |
-| `IAppDataStore` | `FileAppDataStore` (Shared): `AIStoryBuildersLog.csv` and `AIStoryBuildersDatabase.json`, shared with V1 | `LocalStorageAppDataStore` (Shared): keys `asb2:log` and `asb2:db` |
+| `IAppDataStore` | `FileAppDataStore` (Shared): `AIStoryBuildersLog.csv`, shared with V1 (`AIStoryBuildersDatabase.json` is not read, D23) | `LocalStorageAppDataStore` (Shared): key `asb2:log` (`asb2:db` is no longer used, D23) |
 | `IFileExportService` | `MauiFileExportService` (CommunityToolkit.Maui `FileSaver`) | `BrowserFileExportService` (`asb.saveAsFile` and `DotNetStreamReference`) |
 | `IEmbeddingGenerator<string, Embedding<float>>` | `LocalEmbeddingGenerator` (V1, in `AIStoryBuildersV2.Embeddings.Onnx`, D28) | `BrowserEmbeddingGenerator` (Online, vendored onnxruntime-web) |
 | `ISettingsStore` | `MauiSettingsStore`: Preferences `asb.llm.*`, SecureStorage `asb.llm.apiKey` | `BrowserSettingsStore` (Shared, KGB): `asb2:settings` |
@@ -378,11 +378,11 @@ Also fixed from Online: the 512 KB import cap becomes 50 MB, and no save excepti
 
 ```mermaid
 graph TD
-    Layout["MainLayout<br/>logo + RadzenMenu: Home, Logs, Settings"]
+    Layout["MainLayout<br/>logo + RadzenMenu: Home, Logs, Settings, Help"]
     Lib["Library '/'<br/>New Story, Import Story, Import docx-pdf-txt, cards"]
     Logs["Logs '/logs'"]
     Set["Settings '/settings'<br/>LlmSettingsForm + VerifiedModelsPanel"]
-    WS["StoryWorkspace '/story/title'<br/>top bar + RadzenTabs"]
+    WS["StoryWorkspace '/story/title'<br/>top bar + tab strip"]
     Det["DetailsTab"]
     Ent["TimelinesTab, LocationsTab, CharactersTab<br/>+ entity dialogs"]
     ME["ManuscriptEditor = Chapters tab"]
@@ -439,7 +439,7 @@ graph TD
 Retriever rules:
 
 - Uses the **paragraph's chosen model**.
-- `UseFunctionInvocation` with `MaximumIterationsPerRequest = 4`.
+- Its own tool loop of at most 4 model calls; the 4th is sent without tools (Q13).
 - Overall timeout of 60 s.
 - Notes are capped at `MaxKnowledgeNotesChars = 4000`.
 - The system prompt says to return only facts found in KB pages, each with its `[[path]]`, or exactly `NO_RELEVANT_PAGES`.
@@ -737,7 +737,7 @@ public static class KnowledgeAssistConstants
 | `kb_move_folder` (chat only) | `path: string, newParentFolder: string` (`""` is the root) | A proposal, or `{error}` when either folder is missing, the destination is the folder itself or inside it, it is already there, or the name is taken |
 | `kb_delete_folder` (chat only) | `path: string` | A proposal whose summary gives the number of pages and subfolders that go with it, or `{error}` when there is no folder there |
 
-Folder tools refuse the root and page paths. Rename and move rewrite links into the moved pages, as in the Knowledgebase tab, and the applied summary says in how many pages. Apply checks the change again; a folder delete fails with "… changed since the change was proposed." if pages or subfolders were added or removed after the proposal.
+Folder tools refuse the root and page paths. Rename and move rewrite links into the moved pages, as in the Knowledgebase tab, and the applied summary says in how many pages. Apply checks the change again; a folder delete fails with "… changed since the change was proposed." if the folder's number of pages or subfolders changed after the proposal.
 
 Applying a page edit reopens the story's KB and writes through `IKnowledgeWorkspace`, so links, the graph and `MarkDirty` update as for a save in the Knowledgebase tab. Update and delete pass the page's ticks from the proposal: if the page was saved after the proposal, Apply fails with "… changed since the change was proposed." and writes nothing.
 
@@ -748,8 +748,13 @@ public sealed record StoryChatRequest(string StoryTitle, string Message, string 
 public interface IStoryChatService                       // V1 shape, changed
 {
     IAsyncEnumerable<string> SendMessageAsync(StoryChatRequest request, CancellationToken ct = default);
-    void ClearSession(string storyTitle);                // session id = story title
+    void ClearSession(string storyTitle);                // session id = story title; also drops pending changes
     // V1's RefreshClient() is removed: the client comes from IChatClientProvider on every turn
+
+    // SEC-001 proposal queue (Q17, Q19, Q20): graph mutations and kb_ page/folder changes wait here for the user
+    IReadOnlyList<PendingMutation> PendingChanges(string storyTitle);
+    Task<MutationResult?> ApplyPendingAsync(string storyTitle, string pendingId);   // only the Apply button calls it
+    bool DiscardPending(string storyTitle, string pendingId);
 }
 
 public class AIPrompt                                    // V1 model, plus one property
@@ -789,11 +794,11 @@ builder.AddProject<Projects.AIStoryBuildersV2_Web>("web");
 |---|---|---|
 | MAUI | `net11.0-windows10.0.19041.0` always. `net11.0-android;net11.0-ios;net11.0-maccatalyst` only when `-p:IncludeMobileTargets=true` (default `false`), so restore does not need the mobile workloads. | `$(MauiVersion)` = 11.0.0-rc.2.26505.5 via the workload. Add CommunityToolkit.Maui (a version that supports MAUI 11 **(assumed)**). Logging.Debug at 11.0.0-rc.3.26522.148. References `AIStoryBuildersV2.Embeddings.Onnx`. |
 | `AIStoryBuildersV2.Embeddings.Onnx` (new, D28) | `net11.0` | Microsoft.ML.OnnxRuntime 1.24.3 and Microsoft.Extensions.AI.Abstractions 10.11.0. The model and vocab come from V1 `Resources/Raw/` and are copied to the output. |
-| Web | `net11.0` | Components.WebAssembly and DevServer 11.0.0-rc.3.26522.148. Keep Blazored.LocalStorage 4.5.0. Add `TrimmerRootAssembly` for DocX, PdfPig, EPPlus, ExcelDataReader and Newtonsoft.Json. Add `InvariantGlobalization=true` (D30). |
-| Shared | `net11.0` | Components.Web 11.0.0-rc.3.26522.148. Add DocX 5.0.0, PdfPig 0.1.14, EPPlus 8.5.3, ExcelDataReader 3.8.0, Newtonsoft.Json 13.0.4, OllamaSharp 5.5.0, DiffPlex 1.9.0 (KB conflict diff). Keep Radzen `[12.1.9]` and the others at their current versions. |
+| Web | `net11.0` | Components.WebAssembly and DevServer 11.0.0-rc.3.26522.148. Keep Blazored.LocalStorage 4.5.0. Add `TrimmerRootAssembly` for DocX (the `Xceed.*` assemblies), PdfPig, Newtonsoft.Json, Microsoft.Extensions.AI (and its Abstractions), OpenAI and YamlDotNet. Add `InvariantGlobalization=true` (D30). |
+| Shared | `net11.0` | Components.Web 11.0.0-rc.3.26522.148. Add DocX 5.0.0, PdfPig 0.1.14, Newtonsoft.Json 13.0.4, OllamaSharp 5.5.0, DiffPlex 1.9.0 (KB conflict diff). Keep Radzen `[12.1.9]` and the others at their current versions. |
 | AppHost, ServiceDefaults, Tests | `net11.0` | AppHost falls back to `net10.0` if the Aspire SDK refuses net11 (R2). Tests reference Shared and `Embeddings.Onnx`. |
 
-**Workloads.** On this machine the MAUI workloads are installed and managed by Visual Studio (18.11) at the `11.0.100-preview.6` manifest, so `dotnet workload update` cannot update them. Update them through the Visual Studio Installer to a build that ships .NET 11 RC 3 MAUI. Alternatively, install a CLI-managed `maui-windows` workload for the rc.3 SDK. Record the result in T0.
+**Workloads.** Before T0 the MAUI workloads were managed by Visual Studio (18.11) at the `11.0.100-preview.6` manifest. They are now a CLI-managed `maui-windows` workload, `11.0.0-rc.2.26505.5/11.0.100-rc.2`, installed by SDK 11.0.100-rc.3 (`dotnet workload list`), which matches `$(MauiVersion)` above.
 
 **Publishing WASM:** `dotnet publish AIStoryBuildersV2.Web -c Release` writes static files to `bin/Release/net11.0/publish/wwwroot`. The host must fall back to `index.html` and serve `.onnx` and `.wasm` with the right MIME types.
 
@@ -884,7 +889,7 @@ sequenceDiagram
     participant C as StoryChatTab
     participant S as StoryChatService
     participant P as IChatClientProvider
-    participant M as Model via FunctionInvokingChatClient
+    participant M as Model (StoryChatService runs the tool loop, Q13)
     participant K as KnowledgeBaseTools
     participant G as Story graph tools
     U->>C: Ask, checkbox checked
@@ -896,7 +901,7 @@ sequenceDiagram
     S->>M: history + graph tools + kb tools
     M->>K: kb_search_pages, kb_read_page
     K-->>M: page JSON
-    M->>G: get_character_relationships
+    M->>G: GetCharacterRelationships
     G-->>M: graph JSON
     M-->>C: streamed answer with citations
     alt provider error or timeout
@@ -1088,16 +1093,16 @@ dotnet test AIStoryBuildersV2.Tests/AIStoryBuildersV2.Tests.csproj
 | R2 | The Aspire 13.6 AppHost or `Aspire.Hosting.Maui` rejects net11 | Medium | Keep the AppHost on `net10.0`, since it is dev-time only. If it still fails, launch with `dotnet run`. Neither app depends on Aspire. |
 | R3 | V1 and V2 editing the same MAUI story at the same time | Low | Documented. Last writer wins. |
 | R4 | WASM edits are lost if the tab closes within the debounce | Medium | A 1.5 s window, the `visibilitychange` flush, and a dirty indicator |
-| R5 | MAUI 11 RC workload mismatch: the manifests are at preview.6 and managed by Visual Studio | High | Update through the Visual Studio Installer, or install a CLI workload (§6.6). `IncludeMobileTargets=false` avoids needing the mobile workloads. |
+| R5 | MAUI 11 RC workload mismatch: before T0 the manifests were at preview.6 and managed by Visual Studio | ~~High~~ Resolved in T0 | A CLI-managed rc.2 `maui-windows` workload is installed (§6.6). `IncludeMobileTargets=false` avoids needing the mobile workloads. |
 | R6 | RC to GA breaking changes | Medium | One task to bump versions at GA |
 | R7 | Some providers or models reject `ToolMode.RequireAny` | Medium | Retry with `Auto` (§5.9) |
 | R8 | The 2,040-line `Story.cs` port causes regressions | Medium | Port it mechanically first (T2a–T2d), then cover it with V1 fixture byte tests |
 | R9 | `RadzenSpeechToTextButton` (Web Speech API) does not work in WebView2 | Medium | Capability flag; hide the button on MAUI if the T12b check fails |
 | R10 | Culture differences: V1 on MAUI writes dates and vectors in the current culture, while WASM is invariant (Online sets `InvariantGlobalization=true`) | Medium | D30: vectors are written invariant; dates are written in the current culture as V1 does, and read current culture, then en-US, then invariant. A comma-decimal V1 vector is treated as missing and re-embedded. Tested with `de-DE` (§10 Culture). |
-| R11 | Trimming breaks DocX, EPPlus, Newtonsoft or MEAI in a Release WASM build | Medium | `TrimmerRootAssembly` and a published smoke test (T18) |
+| R11 | Trimming breaks DocX, PdfPig, Newtonsoft or MEAI in a Release WASM build | Medium | `TrimmerRootAssembly` and a published smoke test (T18) |
 | R12 | Vendored onnxruntime-web plus the model add about 35 MB to the WASM download | Medium | Lazy-load on first embed, rely on browser caching, and show progress on the first Re-load Story |
 | R13 | The probe costs tokens and latency on every Save | Low | Probe only unverified models, and cache the result per provider, host and model |
-| R14 | Library licensing changes. V1 uses EPPlus 7.3.2 (`LicenseContext.NonCommercial`) and DocX 3.0.1. V2 moves to EPPlus 8 and DocX 5, as Online does, and their license terms differ. | Medium | Use Online's EPPlus 8 call (`License.SetNonCommercialOrganization`). Check the DocX 5 license before T9c. The README records both licenses. |
+| R14 | Library licensing changes. V1 uses EPPlus 7.3.2 (`LicenseContext.NonCommercial`) and DocX 3.0.1. V2 moves to DocX 5, as Online does, and its license terms differ. EPPlus was dropped with the Utility screens (D23). | Medium | Check the DocX 5 license before T9c. The README records the license. |
 | R17 | Gemini multi-turn tool calls may need "thought signatures", which Online's REST client does not send | Medium | Probe stage B exercises a multi-turn tool exchange. If Gemini fails it, the model is refused with a clear message, and the client fix is a follow-up. |
 | R18 | Title threading through `AsyncLocal` is lost if code starts work with `Task.Run` or a captured `ExecutionContext` is suppressed | Low | `StoryGraphContext` test with `FunctionInvokingChatClient`. Graph services throw `InvalidOperationException("No story in StoryGraphContext")` instead of guessing. |
 | R15 | KGB's Radzen Markdown editor wiki-link handling was verified only on 12.1.9 | Low | Keep the exact pin |
@@ -1170,7 +1175,7 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
 - [ ] **T12b: Autodetect Attributes and speech-to-text**, with the capability check.
   - *Done when:* Autodetect adds the detected attributes after confirmation, and the result of the WebView2 speech check is recorded (R9).
 - [ ] **T13: Story Chat.** Port `StoryChatService` on the shared client with `StoryGraphContext` per turn. Add `StoryChatTab` with streaming, Clear and Retry.
-  - *Done when:* "Who does Balt interact with in chapter 2?" answers from graph tools in both apps, and a graph mutation asks for confirmation as V1 does.
+  - *Done when:* "Who does Balt interact with in chapter 2?" answers from graph tools in both apps, and a graph mutation shows a proposed-change card that writes only on **Apply** (changed from V1's confirmation by SEC-001, Q17).
 - [x] **T14: Per-story KB core.** Port KGB `Knowledge/` and `Markdown/` (D12), plus `StoryKnowledgeBaseProvider`, `TickTrackingKnowledgeStore`, `CurrentStoryKnowledgeBase` and `KbLinkBuilder`. Wire the persistence hook.
   - *Done when:* the ported KGB tests, the provider isolation tests and the ticks tests pass, and a test round-trips a story with KB pages through `.stybld`.
 - [x] **T15: Knowledgebase tab.** `KnowledgeBaseTab`, plus the ported `ExplorerPane`, `EditorPane`, `LinksPanel` and dialogs, rewired to `ICurrentStoryKnowledgeBase`. `KnowledgeGraphView` with disposable JS bindings, and the empty state.
@@ -1198,7 +1203,7 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
 4. **MAUI:** the Library shows the existing V1 stories in `Documents\AIStoryBuilders`. A story edited in V2 opens and works in V1, and the reverse.
 5. **WASM:** the published static files work from a plain static server. Stories are stored as `asb2:story:{Title}` and survive a reload. Hitting the quota shows an error and loses no in-session data.
 6. Every feature F1–F19 in §4.2 except F18 (removed, D23) works in both apps.
-7. The Library, Story Workspace tabs, Manuscript Editor and paragraph editor match the artboards in `Docs/Design`.
+7. The Library, Story Workspace tabs, Manuscript Editor and paragraph editor match the artboards in `Docs/Design`, except where UI-Behavior-Spec §19 or §14 records a change (for example, the tab order puts Chat last, Q19).
 8. Every story has its own Knowledge Base, with explorer, editor, links and graph. It is stored under `{Title}/KnowledgeBase/` and carried in `.stybld` exports.
 9. Settings accepts a model only after it passes the connect, tool-call and graph-parse probes. Every model dropdown lists only verified models.
 10. The Chat tab and the paragraph AI prompt each have a **Search knowledgebase** checkbox. When it is checked, answers and generated text can use KB pages, and Story Chat can propose creating, rewriting or deleting any KB page and creating, renaming, moving or deleting folders, which is done only when the user clicks **Apply**. When it is unchecked, no `kb_` tool is offered.
@@ -1225,10 +1230,10 @@ Every *done when* below can be checked with what earlier tasks have built. UI ch
 | Q11 | Should a verified model expire (for example after 90 days) and be re-probed? | No; only a `ProbeConstants.Version` bump clears the list |
 | Q12 | Inter and Newsreader must be vendored (§9), but no Newsreader `woff2` is in the repo and downloading one needs a person. | **Decided by implementer (T1):** Inter comes from the Radzen.Blazor package (`_content/Radzen.Blazor/fonts/InterVariable.woff2`, SIL OFL). Prose uses `'Newsreader', Georgia, serif`, so a vendored Newsreader drops in by adding an `@font-face` to `app.css`. |
 | Q13 | §5.8 says the retriever uses `UseFunctionInvocation` with `MaximumIterationsPerRequest = 4`, but `IChatClientProvider` returns plain clients (V1's Story Chat also runs its own tool loop). | **Decided by implementer (T16):** `KnowledgeContextRetriever` runs its own loop of at most 4 model calls; the 4th is sent without tools so the model must answer, and a model that still calls tools gives a Warning and no notes. Same 60 s timeout, 4000-character cap and `NO_RELEVANT_PAGES` rule. |
-| Q14 | T18 added a footer Xceed notice for the DocX Community License. Keep it? | **Decided by the owner:** no. The app is not used commercially, so the footer notice is removed. The README still records both licenses (R14), and the EPPlus `SetNonCommercialOrganization` call stays, because EPPlus 8 throws without it. |
+| Q14 | T18 added a footer Xceed notice for the DocX Community License. Keep it? | **Decided by the owner:** no. The app is not used commercially, so the footer notice is removed. The README still records the licenses (R14). ~~The EPPlus `SetNonCommercialOrganization` call stays, because EPPlus 8 throws without it.~~ Superseded by D23: EPPlus and that call were removed with the Utility screens. |
 | Q15 | V1's AI writes chapter synopses as "#Beat 1 - …#Beat 2 - …", so the §14.1 title rule showed "#Beat 1 - …" as the chapter title. | **Decided by implementer:** the title and chapter dropdown drop a leading `#Beat N -` marker and stop at the next one (`ChapterDisplay`). The synopsis itself is unchanged. |
 | Q17 | The security review (`Docs/SecurityReview.md`) asked for fixes to SEC-001, SEC-002 and SEC-005. How should each work? | **Decided by implementer:** (1) SEC-001: Story Chat's 20 mutation tools take no `confirmed` parameter. Each runs the preview and stores a `PendingMutation` with its arguments frozen; `StoryChatTab` shows it as a card with the summary, the arguments and **Apply**/**Discard**. Only `IStoryChatService.ApplyPendingAsync` runs it. What the user did is sent to the model as an app note ahead of the next message. Pending changes are dropped by `ClearSession` (Clear conversation, leaving or deleting the story). `ApplyPendingAsync` is not on the §6.2 MarkDirty list because it writes only through methods on that list. (2) SEC-002: Preview makes only `http`, `https` and `mailto` links clickable; any other scheme renders like a chat link (inert). (3) SEC-005: `ZipLimits.Story` (20,000 entries, 64 MB per entry, 512 MB total) for MAUI imports, `ZipLimits.BrowserStory` (32 MB, 128 MB) for WASM imports and stored-story extraction, `ZipLimits.Docx` (2,000, 128 MB, 256 MB) before DocX loads a manuscript. A refused file shows "The file is too large to import." |
 | Q16 | The owner asked for more attractive library cards and dialogs with shadowed edges. | **Decided by the owner, styled by implementer:** story cards show a book cover colored by the story's Style with the title's initial, a two-line title, a Style chip and "Edited …"; the whole card opens the story. Dialogs get a 16 px radius, a layered shadow and a lighter mask. |
 | Q18 | The owner asked for an in-app Help page. What should it show, and how does it stay current? | **Decided by implementer:** a **Help** menu item (`help_outline`) opens `/help`, which renders `Docs/User-Guide.md` embedded in the Shared library, with a contents list of its sections and its screenshots served from `Docs/images/user-guide/` (UI-Behavior-Spec §7a). Updating the guide updates the page. The Mermaid diagram is shown as a list of steps, because no Mermaid script ships (D18). |
-| Q19 | The owner asked that (1) Story Chat can edit every page in the knowledge base and (2) the **Chat** tab sits to the right of **Knowledgebase**, as the last workspace tab. How should each work? | **Decided by the owner, details by implementer:** (1) With **Search knowledgebase** checked, Story Chat gets `kb_create_page`, `kb_update_page` (replaces the whole page) and `kb_delete_page` for any page in any folder (§6.4). Each is a proposal in the SEC-001 queue with **Apply**/**Discard**; nothing is written until Apply, and Apply fails rather than overwrite a page saved after the proposal. ~~Folder rename and move stay in the Knowledgebase tab.~~ Superseded by Q20. As before, an empty KB offers no `kb_` tools, so the first page is created in the Knowledgebase tab. The paragraph retriever stays read-only. (2) Tab order: Details, Timelines, Locations, Characters, Chapters, Knowledgebase, Chat (UI-Behavior-Spec §6, DESIGN §2). |
+| Q19 | The owner asked that (1) Story Chat can edit every page in the knowledge base and (2) the **Chat** tab sits to the right of **Knowledgebase**, as the last workspace tab. How should each work? | **Decided by the owner, details by implementer:** (1) With **Search knowledgebase** checked, Story Chat gets `kb_create_page`, `kb_update_page` (replaces the whole page) and `kb_delete_page` for any page in any folder (§6.4). Each is a proposal in the SEC-001 queue with **Apply**/**Discard**; nothing is written until Apply, and Apply fails rather than overwrite a page saved after the proposal. ~~Folder rename and move stay in the Knowledgebase tab.~~ Superseded by Q20. As before, an empty KB offers no `kb_` tools, so the first page is created in the Knowledgebase tab. The paragraph retriever stays read-only. (2) Tab order: Details, Timelines, Locations, Characters, Chapters, Knowledgebase, Chat (UI-Behavior-Spec §9.4, DESIGN §2). |
 | Q20 | The owner asked that Story Chat can also manage knowledge base folders. How should it work? | **Decided by the owner, details by implementer:** with **Search knowledgebase** checked, Story Chat gets `kb_create_folder` (parents are created too), `kb_rename_folder`, `kb_move_folder` (`""` moves to the root) and `kb_delete_folder` (the folder with all its pages and subfolders) (§6.4). Each is a proposal in the SEC-001 queue; nothing changes until Apply. Rename and move go through `IKnowledgeWorkspace`, so links into the moved pages are rewritten as in the Knowledgebase tab. Apply re-checks the change, and a folder delete fails if the folder's page or subfolder count changed after the proposal. The root can't be changed, and folder tools refuse page paths (pages keep the page tools). Renaming or moving a single page is not offered; the chat can recreate the page and delete the old one. |
