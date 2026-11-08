@@ -96,6 +96,30 @@ public class OrchestratorTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateNewChapters_ends_its_progress_message_when_the_call_ends()
+    {
+        _chat.EnqueueText("""{"chapter":[]}""").EnqueueFailure(new InvalidOperationException("provider down"));
+        var orchestrator = new OrchestratorMethods(_f.Log, _f.Embeddings, new FakeChatClientProvider(_chat), new StubSettings());
+        var shown = new List<OrchestratorMethods.ReadTextEventArgs>();
+        var ended = new List<OrchestratorMethods.ReadTextEventArgs>();
+        orchestrator.ReadTextEvent += (_, e) => shown.Add(e);
+        orchestrator.ReadTextEnded += (_, e) =>
+        {
+            Assert.Contains(e, shown);
+            ended.Add(e);
+        };
+
+        await orchestrator.CreateNewChapters("{}", "1", "m");
+        Assert.Equal("Calling AI provider...", Assert.Single(shown).Message);
+        Assert.Same(shown[0], Assert.Single(ended));
+
+        // A failed call closes its message too.
+        await Assert.ThrowsAnyAsync<Exception>(() => orchestrator.CreateNewChapters("{}", "1", "m"));
+        Assert.Equal(2, ended.Count);
+        Assert.Same(shown[1], ended[1]);
+    }
+
+    [Fact]
     public async Task AddStory_writes_files_from_the_model_output()
     {
         _chat.EnqueueText("""

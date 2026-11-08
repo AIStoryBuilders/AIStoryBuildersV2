@@ -30,17 +30,25 @@ public partial class OrchestratorMethods
                 ["ChapterCount"] = ChapterCount
             });
 
-        ReadTextEvent?.Invoke(this, new ReadTextEventArgs($"Calling AI provider...", 70));
+        // V1 showed this for a fixed 70 seconds; it now closes as soon as the call ends, and 70 seconds is only the fallback.
+        var progress = new ReadTextEventArgs("Calling AI provider...", 70);
+        ReadTextEvent?.Invoke(this, progress);
+        try
+        {
+            LogService.WriteToLog($"Prompt token estimate: {TokenEstimator.EstimateTokens(messages)}");
 
-        LogService.WriteToLog($"Prompt token estimate: {TokenEstimator.EstimateTokens(messages)}");
+            var options = ChatOptionsFactory.CreateJsonOptions(await ProviderAsync(), GPTModel);
 
-        var options = ChatOptionsFactory.CreateJsonOptions(await ProviderAsync(), GPTModel);
+            var response = await api.GetResponseAsync(messages, options);
 
-        var response = await api.GetResponseAsync(messages, options);
+            LogService.WriteToLog($"TotalTokens: {response.Usage?.TotalTokenCount} - ChatResponseResult");
 
-        LogService.WriteToLog($"TotalTokens: {response.Usage?.TotalTokenCount} - ChatResponseResult");
-
-        return response;
+            return response;
+        }
+        finally
+        {
+            ReadTextEnded?.Invoke(this, progress);
+        }
     }
     #endregion
 }

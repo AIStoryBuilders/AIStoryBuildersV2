@@ -13,6 +13,9 @@ public partial class OrchestratorMethods
 {
     public event EventHandler<ReadTextEventArgs> ReadTextEvent;
 
+    /// <summary>Raised with the same args as <see cref="ReadTextEvent"/> when that step is over, so its message can be closed.</summary>
+    public event EventHandler<ReadTextEventArgs> ReadTextEnded;
+
     public LogService LogService { get; }
 
     readonly IEmbeddingGenerator<string, Embedding<float>> _embeddingGenerator;
