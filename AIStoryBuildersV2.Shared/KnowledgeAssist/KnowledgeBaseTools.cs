@@ -271,9 +271,11 @@ public sealed class KnowledgeBaseTools(IStoryKnowledgeBase kb, int maxToolResult
             }
             default:
                 stats = await Workspace.GetFolderStatsAsync(folder.Value, ct);
-                summary = $"Delete the knowledge base folder {folder.Value}, with its {stats.Pages} pages and {stats.Folders} subfolders";
+                summary = $"Delete the knowledge base folder {folder.Value}, with its {Count(stats.Pages, "page")} and {Count(stats.Folders, "subfolder")}";
                 break;
         }
+
+        static string Count(int n, string noun) => $"{n} {noun}{(n == 1 ? "" : "s")}";
 
         var preview = new MutationResult { Success = true, IsPreview = true, Operation = tool, Entity = folder.Value, Summary = summary, AffectedFiles = files };
         return new KbFolderPlan(preview, folder.Value, stats);

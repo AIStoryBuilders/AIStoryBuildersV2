@@ -340,9 +340,21 @@ If the knowledge base is empty, create the first page there; the chat can't see 
 
 ### Delete pages and folders with Include Knowledgebase off
 
-Deleting works even when **Include Knowledgebase** is unchecked. Give the exact path, for example *Delete the page Lore/Necklace.md* or *Delete the folder Drafts*. With the box unchecked, the chat can't read or search your pages, so it can't find a page by its title or content, and it can't create, rewrite, rename or move anything. Check the box for those.
+Deleting works even when **Include Knowledgebase** is unchecked. Give the exact path, for example *Delete the page Drafts/Ideas.md* or *Delete the folder Drafts*. With the box unchecked, the chat can't read or search your pages, so it can't find a page by its title or content, and it can't create, rewrite, rename or move anything. Check the box for those.
 
-The delete is still a **Proposed change** card, and nothing is deleted until you click **Apply**.
+1. Uncheck **Include Knowledgebase**, or leave it unchecked.
+2. Type the delete with the page's full path, including its folder, and press **Enter**.
+3. Check the path on the **Proposed change · kb_delete_page** card, then click **Apply**.
+
+![A page delete proposed with Include Knowledgebase unchecked](images/user-guide/52-chat-kb-delete-page.png)
+
+To delete a folder, type *Delete the folder* and its path. The **Proposed change · kb_delete_folder** card says how many pages and subfolders go with it.
+
+![A folder delete proposed with Include Knowledgebase unchecked](images/user-guide/53-chat-kb-delete-folder.png)
+
+**What you should see:** after each **Apply**, a message that starts with **Applied:**. The page or folder is gone from the **Knowledgebase** tab the next time you open it. Nothing is deleted until you click **Apply**, and **Discard** keeps it.
+
+![The chat after the page and the folder were deleted](images/user-guide/54-chat-kb-delete-applied.png)
 
 To start over, click the circular arrow (**Clear conversation**). The conversation is also cleared when you close the story.
 
@@ -412,7 +424,7 @@ Each story can have a knowledge base: your own Markdown notes, such as world his
 
 ![A page in Source view](images/user-guide/36-kb-page-source.png)
 
-**What you should see:** **Saved**. In **Preview**, links to pages that don't exist yet are marked **(unresolved)**.
+**What you should see:** **Saved**. In **Preview**, links to pages that don't exist yet have a broken-link icon and a dashed underline.
 
 ![A page in Preview with unresolved links](images/user-guide/37-kb-page-preview.png)
 

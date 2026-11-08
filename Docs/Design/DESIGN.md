@@ -111,9 +111,9 @@ A tabbed surface (opened for one story). Tabs, left→right:
   - *Graph*: an interactive node-link graph grouped by type (Characters / Locations / Timelines,
     plus dashed "missing" nodes), with a scope toggle, a find box, and a node details panel
     (Open / Show around).
-- **Chat** — "Story Chat Assistant": model dropdown + **Search knowledgebase** + clear; user/AI
+- **Chat** — "Story Chat Assistant": model dropdown + **Include Knowledgebase** + clear; user/AI
   message bubbles; proposed-change cards with **Apply** / **Discard**; input + Send. (Backed by a
-  knowledge-graph-aware chat over the story. With Search knowledgebase checked it can also edit
+  knowledge-graph-aware chat over the story. With Include Knowledgebase checked it can also edit
   every Knowledgebase page and manage its folders, each change shown as a proposed-change card;
   deleting a page or folder works even when it is unchecked.)
 

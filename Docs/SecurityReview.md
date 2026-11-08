@@ -255,10 +255,10 @@ SEC-001, SEC-002 and SEC-005 are fixed in the working tree. The rest are still o
 
 > **Changes since this review (2026-11-07, plan Q19 and Q20).**
 >
-> - **KB write tools.** Story Chat can now change the knowledge base. With **Search knowledgebase** checked, it gets 7 more proposal tools: `kb_create_page`, `kb_update_page` and `kb_delete_page`, plus `kb_create_folder`, `kb_rename_folder`, `kb_move_folder` and `kb_delete_folder`. So the queue holds 27 tools, not 20.
+> - **KB write tools.** Story Chat can now change the knowledge base. With **Include Knowledgebase** checked, it gets 7 more proposal tools: `kb_create_page`, `kb_update_page` and `kb_delete_page`, plus `kb_create_folder`, `kb_rename_folder`, `kb_move_folder` and `kb_delete_folder`. So the queue holds 27 tools, not 20.
 > - **Same protection as SEC-001.** They go through the same SEC-001 queue: no `confirmed` parameter, and nothing is written until the user clicks **Apply**. Apply also refuses a page edit or folder delete if the target changed after the proposal.
 > - **Threat model.** Injected text in a KB page or story file can now ask the model to *propose* KB changes, not only story changes. The user still decides each one.
-> - **Deletes without the checkbox (Q21).** `kb_delete_page` and `kb_delete_folder` are offered even when **Search knowledgebase** is unchecked. An injected instruction in a story file could then ask for a KB delete without the user opting into KB access. It is still only a proposal shown with its path and page count, and nothing is deleted until **Apply**.
+> - **Deletes without the checkbox (Q21).** `kb_delete_page` and `kb_delete_folder` are offered even when **Include Knowledgebase** is unchecked. An injected instruction in a story file could then ask for a KB delete without the user opting into KB access. It is still only a proposal shown with its path and page count, and nothing is deleted until **Apply**.
 > - **Line references.** `file:line` references in this review are for the reviewed commit `2ad8cc1`. In the current tree, `MaxRounds` is at `StoryChat/StoryChatService.cs:50` and the `TOOL_CALL` log line (SEC-006) is at about `StoryChatService.cs:407-408`.
 
 | ID | What changed | Differences from the recommendation | Tests |

@@ -394,7 +394,7 @@ public class SearchKnowledgeBaseTests : IDisposable
         var kb = await SeedAsync();
         var chat = await ProposeAsync(ScriptedChatClient.Call("c1", "kb_delete_folder", ("path", "Lore")));
 
-        Assert.Contains("with its 1 pages and 0 subfolders", Assert.Single(chat.PendingChanges(Title)).Preview.Summary);
+        Assert.Contains("with its 1 page and 0 subfolders", Assert.Single(chat.PendingChanges(Title)).Preview.Summary);
         Assert.True(await kb.Workspace.ExistsAsync("Lore/Necklace.md"));
         await ApplyAllAsync(chat);
 
