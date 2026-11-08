@@ -255,6 +255,9 @@ LLM output varies, so each check names words that must or must not appear, compa
 | T13 | `before/` story, any verified model | Chat: `Who does Balt interact with in chapter 2?` | The answer mentions `Freya`, and the log shows at least one story-graph tool call |
 | T16 chat, checked | `Fixtures/KbStory`, Search knowledgebase **checked** | Chat: `Who forged the necklace?` | The answer contains `Hrafnkel` and a citation `[[Lore/Necklace]]`. The log shows `kb_search_pages` or `kb_read_page`. |
 | T16 chat, unchecked | Same, **unchecked** | Same question | No `kb_` tool is offered or called. The answer does not contain `Hrafnkel`, which appears nowhere in the story files. |
+| Q19 chat edits a page | Same, **checked** | Chat: `Add to the Lore/Necklace page that it glows at night.` | A "Proposed change · kb_update_page" card appears and `Lore/Necklace.md` is unchanged. After **Apply**, the Knowledgebase tab shows the page with the new sentence and the rest of the page kept. |
+| Q19 Apply after a user save | Same as above, but edit and **Save** `Lore/Necklace.md` in the Knowledgebase tab before clicking **Apply** | — | "Could not apply the change: Lore/Necklace.md changed since the change was proposed." The user's text is kept. |
+| Q19 tab order | Open any story | — | The tabs read Details, Timelines, Locations, Characters, Chapters, Knowledgebase, Chat |
 | T16 generate, checked | Chapter 2 → Paragraph 2 → AI | Prompt `Freya studies the necklace and remembers who made it.`, 100 words, Search knowledgebase **checked** | The generated text contains `Hrafnkel` or `fallen star` |
 | T16 generate, unchecked | Same, **unchecked** | Same prompt | Success is not judged on content. Check only that the retriever was not called. |
 | T16 retrieval failure | Same as checked, with the provider made unreachable during retrieval only (test double) | Generate | A warning toast appears, the paragraph is still generated, and Undo works |

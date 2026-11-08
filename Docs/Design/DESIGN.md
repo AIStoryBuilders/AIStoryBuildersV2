@@ -81,7 +81,9 @@ Settings**. The selected menu item swaps the page body between four views.
 ## 2. Story Workspace  (`StoryWorkspace.dc.html`)
 
 A tabbed surface (opened for one story). Tabs, left→right:
-**Details · Timelines · Locations · Characters · Chapters · Chat · Knowledgebase**.
+**Details · Timelines · Locations · Characters · Chapters · Knowledgebase · Chat**.
+**Chat** is the last tab, to the right of **Knowledgebase** (plan Q19). The artboard in
+`StoryWorkspace.dc.html` still shows the older order; the app follows this list.
 
 - **Details** — Story Title (read-only), **Style** dropdown, **Synopsis**, collapsible **System
   Message** and **World Facts** panels. Buttons: **Save** (`save`), **Save Word Doc** (`print`),
@@ -95,8 +97,6 @@ A tabbed surface (opened for one story). Tabs, left→right:
   - *Timeline*: Timeline Name; Start/Stop date-times; **Save** / **Delete**.
 - **Chapters** — **this tab IS the Manuscript Editor** embedded (see §3): the chapter dropdown,
   auto-detected paragraph outline, the document, and the paragraph-edit popup.
-- **Chat** — "Story Chat Assistant": model dropdown + clear; user/AI message bubbles; input + Send.
-  (Backed by a knowledge-graph-aware chat over the story.)
 - **Knowledgebase** — a knowledge-graph wiki (modeled on
   https://github.com/ADefWebserver/KnowledgeGraphBuilder):
   - **Pages / Graph** toggle.
@@ -107,6 +107,10 @@ A tabbed surface (opened for one story). Tabs, left→right:
   - *Graph*: an interactive node-link graph grouped by type (Characters / Locations / Timelines,
     plus dashed "missing" nodes), with a scope toggle, a find box, and a node details panel
     (Open / Show around).
+- **Chat** — "Story Chat Assistant": model dropdown + **Search knowledgebase** + clear; user/AI
+  message bubbles; proposed-change cards with **Apply** / **Discard**; input + Send. (Backed by a
+  knowledge-graph-aware chat over the story. With Search knowledgebase checked it can also edit
+  every Knowledgebase page, each edit shown as a proposed-change card.)
 
 ## 3. Manuscript Editor  (`ManuscriptEditor.dc.html`)
 

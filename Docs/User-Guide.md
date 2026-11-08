@@ -29,7 +29,7 @@ There are no user accounts, sign-in or roles. Everyone who opens the app on a co
 
 ## How it works
 
-You connect an AI provider once. Then you create a story, or import a manuscript, and the AI drafts the characters, locations, timelines and chapters. You refine those story elements, then write each chapter section by section. You can write a section yourself or ask the AI to write it. The **Chat** tab answers questions about your story and can propose changes. The **Knowledgebase** tab holds your own reference notes, which the AI can search when you ask it to.
+You connect an AI provider once. Then you create a story, or import a manuscript, and the AI drafts the characters, locations, timelines and chapters. You refine those story elements, then write each chapter section by section. You can write a section yourself or ask the AI to write it. The **Chat** tab answers questions about your story and can propose changes to the story and to its knowledge base pages. The **Knowledgebase** tab holds your own reference notes, which the AI can search when you ask it to.
 
 ```mermaid
 flowchart LR
@@ -122,7 +122,7 @@ Use this when you already have a draft. The AI splits it into chapters and secti
 Your stories are listed on the **Home** page. Each card shows the title, the story style and when you last edited it.
 
 1. Click a story card, or its **Select** button.
-2. Use the tabs to move around: **Details**, **Timelines**, **Locations**, **Characters**, **Chapters**, **Chat** and **Knowledgebase**.
+2. Use the tabs to move around: **Details**, **Timelines**, **Locations**, **Characters**, **Chapters**, **Knowledgebase** and **Chat**.
 3. When you're done, click the **X** (**Close workspace**) at the top right to return to the library.
 
 ![The library with two stories](images/user-guide/45-library-with-story.png)
@@ -291,9 +291,9 @@ Use this to have the AI write or rewrite a section. It uses the chapter synopsis
 
 Use the **Chat** tab to ask questions about your story, check for problems, or ask for changes.
 
-1. Click the **Chat** tab.
+1. Click the **Chat** tab. It's the last tab, to the right of **Knowledgebase**.
 2. Pick a model from the list. This choice is only for this chat; it doesn't change your default model.
-3. Check **Search knowledgebase** if the answer may be in your knowledge base pages.
+3. Check **Search knowledgebase** if the answer may be in your knowledge base pages, or if you want the chat to edit them.
 4. Type a question in **Ask about your story...**. For example: *Are there any orphaned characters?* or *Tell me about the main characters*.
 5. Press **Enter** or click **Send**. Press **Shift+Enter** for a new line.
 
@@ -315,6 +315,16 @@ If you ask for a change, such as *Add a new character named Captain Rourke*, the
 **What you should see:** a message that starts with **Applied:** or **Discarded:**. Applied changes show up on the other tabs.
 
 ![The chat after a change was applied](images/user-guide/32-chat-applied.png)
+
+### Edit knowledge base pages from the chat
+
+With **Search knowledgebase** checked, the chat can edit every page in your knowledge base, in any folder. Ask it to add a page, rewrite a page or delete one. For example: *Add to the Hrafnkel page that he forged the Necklace* or *Create a page Places/Village.md about the fjord village*.
+
+Each edit is a **Proposed change** card, such as **Proposed change · kb_update_page**, just like a story change. **Details** shows the page's full new text. Nothing changes until you click **Apply**.
+
+**What you should see:** after **Apply**, the page shows the new text the next time you open the **Knowledgebase** tab. If you saved that page yourself after the AI proposed the edit, **Apply** doesn't overwrite your text. You see **Could not apply the change:** and the page stays as you saved it. Ask the chat again to get a new proposal.
+
+To rename or move folders, use the **Knowledgebase** tab. If the knowledge base is empty, create the first page there; the chat can't see an empty knowledge base.
 
 To start over, click the circular arrow (**Clear conversation**). The conversation is also cleared when you close the story.
 
@@ -362,7 +372,7 @@ Use this to restore a backup or open a story exported from another computer.
 
 ## 13. Build a knowledge base
 
-Each story can have a knowledge base: your own Markdown notes, such as world history, magic rules or research. The pages are separate from the characters, locations and timelines. Link pages to each other with `[[Page name]]`. The AI reads them when you check **Search knowledgebase** in the AI prompt or in the chat.
+Each story can have a knowledge base: your own Markdown notes, such as world history, magic rules or research. The pages are separate from the characters, locations and timelines. Link pages to each other with `[[Page name]]`. The AI reads them when you check **Search knowledgebase** in the AI prompt or in the chat, and the chat can also propose edits to them (see [Edit knowledge base pages from the chat](#edit-knowledge-base-pages-from-the-chat)).
 
 ### Create a page
 

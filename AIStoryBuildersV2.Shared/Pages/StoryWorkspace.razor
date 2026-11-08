@@ -123,10 +123,11 @@ else
 
     enum SaveState { Saved, Saving, Unsaved, Failed }
 
-    static readonly (string Key, string Label)[] Tabs =
+    /// <summary>UI spec §6: left to right, with Chat last (after Knowledgebase).</summary>
+    internal static readonly (string Key, string Label)[] Tabs =
     [
         ("details", "Details"), ("timelines", "Timelines"), ("locations", "Locations"), ("characters", "Characters"),
-        ("chapters", "Chapters"), ("chat", "Chat"), ("kb", "Knowledgebase"),
+        ("chapters", "Chapters"), ("kb", "Knowledgebase"), ("chat", "Chat"),
     ];
 
     Story? story;

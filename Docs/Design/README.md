@@ -8,7 +8,7 @@ exact layout + behaviour reference; `canvas.json` records how the three boards s
 
 - `Library.dc.html` — Library / Home (+ Settings, Logs, Utility)
 - `StoryWorkspace.dc.html` — Story Workspace (Details · Timelines · Locations · Characters ·
-  Chapters · Chat · Knowledgebase)
+  Chapters · Knowledgebase · Chat; the app puts Chat last, see DESIGN.md §2)
 - `ManuscriptEditor.dc.html` — the single-page Manuscript Editor
 
 Live version: https://claude.ai/artifact/UiAs46XY9LriNYAAQdaPLf

@@ -221,6 +221,144 @@ public class SearchKnowledgeBaseTests : IDisposable
         Assert.DoesNotContain(_chat.Options[0]!.Tools!, t => t.Name.StartsWith("kb_", StringComparison.Ordinal));
     }
 
+    // ── Chat edits to knowledge base pages ──────────────────────────
+
+    static async Task SendAsync(IStoryChatService chat, string message)
+    {
+        await foreach (var _ in chat.SendMessageAsync(new StoryChatRequest(Title, message, "test-model", true))) { }
+    }
+
+    async Task<string> PageAsync(string path) => (await (await _kbs.OpenAsync(Title)).Workspace.ReadPageAsync(path)).Markdown;
+
+    [Fact]
+    public async Task Chat_offers_the_page_edit_tools_with_the_read_tools_and_mentions_them()
+    {
+        await SeedAsync();
+        _chat.EnqueueText("ok");
+
+        await SendAsync(Chat(), kb: true);
+
+        var names = _chat.Options[0]!.Tools!.Select(t => t.Name).ToList();
+        Assert.Contains("kb_create_page", names);
+        Assert.Contains("kb_update_page", names);
+        Assert.Contains("kb_delete_page", names);
+        Assert.Contains("kb_update_page", _chat.Requests[0][0].Text);
+    }
+
+    [Fact]
+    public async Task The_retriever_for_paragraph_writing_stays_read_only()
+    {
+        await SeedAsync();
+        _chat.EnqueueText(KnowledgeAssistConstants.NoRelevantPages);
+
+        await Retriever().RetrieveAsync(Title, "necklace", "test-model", CancellationToken.None);
+
+        Assert.DoesNotContain(_chat.Options[0]!.Tools!, t => KnowledgeBaseTools.EditToolNames.Contains(t.Name));
+    }
+
+    [Fact]
+    public async Task Chat_proposes_a_page_rewrite_and_writes_it_only_on_Apply()
+    {
+        await SeedAsync();
+        const string updated = "# Hrafnkel\nA smith in the fjord village. He forged the Necklace.\n";
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c1", "kb_update_page", ("path", "Hrafnkel"), ("markdown", updated)))
+             .EnqueueText("I proposed the change.");
+        var chat = Chat();
+
+        await SendAsync(chat, "Note on Hrafnkel's page that he forged the Necklace.");
+
+        var pending = Assert.Single(chat.PendingChanges(Title));
+        Assert.Equal("kb_update_page", pending.ToolName);
+        Assert.Contains(pending.Arguments, a => a.Key == "markdown" && a.Value == updated);
+        Assert.Equal(["KnowledgeBase/Hrafnkel.md"], pending.Preview.AffectedFiles);
+        Assert.DoesNotContain("forged", await PageAsync("Hrafnkel.md"));
+
+        var result = await chat.ApplyPendingAsync(Title, pending.Id);
+
+        Assert.True(result!.Success, result.Error);
+        Assert.Equal(updated, await PageAsync("Hrafnkel.md"));
+        Assert.Empty(chat.PendingChanges(Title));
+    }
+
+    [Fact]
+    public async Task Chat_can_create_and_delete_pages_in_any_folder()
+    {
+        await SeedAsync();
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c1", "kb_create_page", ("path", "Places/Fjord/Village.md"), ("markdown", "# Village\nHome of Hrafnkel.\n")),
+                           ScriptedChatClient.Call("c2", "kb_delete_page", ("path", "Lore/Necklace.md")))
+             .EnqueueText("Proposed.");
+        var chat = Chat();
+
+        await SendAsync(chat, "Add a village page and remove the necklace page.");
+
+        var pending = chat.PendingChanges(Title);
+        Assert.Equal(["kb_create_page", "kb_delete_page"], pending.Select(p => p.ToolName));
+        foreach (var p in pending) Assert.True((await chat.ApplyPendingAsync(Title, p.Id))!.Success);
+
+        var kb = await _kbs.OpenAsync(Title);
+        Assert.Equal("# Village\nHome of Hrafnkel.\n", await PageAsync("Places/Fjord/Village.md"));
+        Assert.False(await kb.Workspace.ExistsAsync("Lore/Necklace.md"));
+    }
+
+    [Fact]
+    public async Task Discarding_a_page_edit_writes_nothing()
+    {
+        await SeedAsync();
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c1", "kb_delete_page", ("path", "Hrafnkel.md"))).EnqueueText("Proposed.");
+        var chat = Chat();
+
+        await SendAsync(chat, "Delete Hrafnkel.");
+
+        Assert.True(chat.DiscardPending(Title, Assert.Single(chat.PendingChanges(Title)).Id));
+        Assert.True(await (await _kbs.OpenAsync(Title)).Workspace.ExistsAsync("Hrafnkel.md"));
+    }
+
+    [Fact]
+    public async Task Apply_does_not_overwrite_a_page_the_user_saved_after_the_proposal()
+    {
+        var kb = await SeedAsync();
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c1", "kb_update_page", ("path", "Hrafnkel.md"), ("markdown", "# Hrafnkel\nAI text.\n")))
+             .EnqueueText("Proposed.");
+        var chat = Chat();
+        await SendAsync(chat, "Rewrite Hrafnkel.");
+        var pending = Assert.Single(chat.PendingChanges(Title));
+
+        var current = await kb.Workspace.ReadPageAsync("Hrafnkel.md");
+        await kb.Workspace.SavePageAsync("Hrafnkel.md", "# Hrafnkel\nThe user's text.\n", current.ModifiedTicks);
+        var result = await chat.ApplyPendingAsync(Title, pending.Id);
+
+        Assert.False(result!.Success);
+        Assert.Contains("changed since", result.Error);
+        Assert.Equal("# Hrafnkel\nThe user's text.\n", await PageAsync("Hrafnkel.md"));
+    }
+
+    [Theory]
+    [InlineData("kb_create_page", "Hrafnkel.md", "already exists")]
+    [InlineData("kb_update_page", "Missing.md", "No page at")]
+    [InlineData("kb_delete_page", "Missing.md", "No page at")]
+    [InlineData("kb_create_page", "../../escape.md", "are not allowed")]
+    [InlineData("kb_update_page", "C:/Windows/win.ini", "Drive letters are not allowed")]
+    public async Task Invalid_page_edits_are_refused_without_a_proposal(string tool, string path, string error)
+    {
+        await SeedAsync();
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c1", tool, ("path", path), ("markdown", "# New text\n"))).EnqueueText("Sorry.");
+        var chat = Chat();
+
+        await SendAsync(chat, "Edit a page.");
+
+        Assert.Empty(chat.PendingChanges(Title));
+        var result = _chat.Requests[1].SelectMany(m => m.Contents).OfType<FunctionResultContent>().Single();
+        Assert.Contains(error, result.Result?.ToString());
+    }
+
+    [Fact]
+    public void Chat_is_the_last_workspace_tab_after_Knowledgebase()
+    {
+        var labels = AIStoryBuildersV2.Shared.Pages.StoryWorkspace.Tabs.Select(t => t.Label).ToArray();
+
+        Assert.Equal(["Details", "Timelines", "Locations", "Characters", "Chapters", "Knowledgebase", "Chat"], labels);
+    }
+
     [Fact]
     public async Task Checkbox_defaults_follow_the_knowledge_base_and_are_remembered_per_surface()
     {
