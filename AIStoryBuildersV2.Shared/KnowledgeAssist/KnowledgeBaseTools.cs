@@ -190,7 +190,140 @@ public sealed class KnowledgeBaseTools(IStoryKnowledgeBase kb, int maxToolResult
     }
 
     const int MaxPageBytes = 1_048_576;
+
+    // ── Folder management for Story Chat (Q20) ──────────────────────
+    // Same proposal flow as page edits. Rename and move go through the workspace, so links into the folder's pages are
+    // rewritten as in the Knowledgebase tab. Apply checks the folder again, and a delete fails if its contents changed.
+
+    public const string CreateFolderTool = Prefix + "create_folder";
+    public const string RenameFolderTool = Prefix + "rename_folder";
+    public const string MoveFolderTool = Prefix + "move_folder";
+    public const string DeleteFolderTool = Prefix + "delete_folder";
+
+    public static readonly IReadOnlySet<string> FolderToolNames =
+        new HashSet<string>(StringComparer.Ordinal) { CreateFolderTool, RenameFolderTool, MoveFolderTool, DeleteFolderTool };
+
+    public static string ToolName(KbFolderEditKind kind) => kind switch
+    {
+        KbFolderEditKind.Create => CreateFolderTool,
+        KbFolderEditKind.Rename => RenameFolderTool,
+        KbFolderEditKind.Move => MoveFolderTool,
+        _ => DeleteFolderTool,
+    };
+
+    async Task<bool> IsFolderAsync(KnowledgePath folder, CancellationToken ct) =>
+        folder.IsRoot || (!KnowledgePath.IsPagePath(folder.Value) && await Workspace.ExistsAsync(folder.Value, ct));
+
+    /// <summary>
+    /// Checks a proposed folder change. <paramref name="argument"/> is the new name (rename) or the new parent folder,
+    /// "" for the root (move); create and delete ignore it.
+    /// </summary>
+    public async Task<KbFolderPlan> PlanFolderAsync(KbFolderEditKind kind, string? path, string? argument, CancellationToken ct = default)
+    {
+        var tool = ToolName(kind);
+        KbFolderPlan Fail(string message) => new(new MutationResult { Operation = tool, Entity = path ?? "", Error = message }, "", null);
+
+        if (!KnowledgePath.TryParse(path?.Trim().Trim('/'), isPage: false, out var folder, out var error)) return Fail(error);
+        if (folder.IsRoot) return Fail("A folder path is required; the root can't be changed.");
+        if (KnowledgePath.IsPagePath(folder.Value)) return Fail($"{folder.Value} is a page, not a folder.");
+
+        var exists = await Workspace.ExistsAsync(folder.Value, ct);
+        if (kind == KbFolderEditKind.Create && exists) return Fail($"{folder.Value} already exists.");
+        if (kind != KbFolderEditKind.Create && !exists) return Fail($"No folder at {folder.Value}");
+
+        var root = StoryKnowledgeBaseProvider.FolderName;
+        string summary;
+        List<string> files = [$"{root}/{folder.Value}/"];
+        FolderStats? stats = null;
+        switch (kind)
+        {
+            case KbFolderEditKind.Create:
+                summary = $"Create the knowledge base folder {folder.Value}";
+                break;
+            case KbFolderEditKind.Rename:
+            {
+                var name = (argument ?? "").Trim();
+                if (name.Contains('/') || name.Contains('\\')) return Fail("A folder name can't contain '/' or '\\'.");
+                var segError = KnowledgePath.ValidateSegment(name);
+                if (segError is not null) return Fail(segError);
+                var target = folder.Parent.Combine(name);
+                if (string.Equals(target.Value, folder.Value, StringComparison.Ordinal)) return Fail($"{folder.Value} already has that name.");
+                if (!string.Equals(target.Value, folder.Value, StringComparison.OrdinalIgnoreCase) && await Workspace.ExistsAsync(target.Value, ct))
+                    return Fail($"{target.Value} already exists.");
+                summary = $"Rename the knowledge base folder {folder.Value} to {target.Value}";
+                files.Add($"{root}/{target.Value}/");
+                break;
+            }
+            case KbFolderEditKind.Move:
+            {
+                if (!KnowledgePath.TryParse(argument?.Trim().Trim('/'), isPage: false, out var parent, out var parentError)) return Fail(parentError);
+                if (!await IsFolderAsync(parent, ct)) return Fail($"No folder at {parent.Value}");
+                if (parent == folder || parent.IsUnder(folder)) return Fail("A folder can't be moved into itself or one of its subfolders.");
+                if (parent == folder.Parent) return Fail($"{folder.Value} is already in that folder.");
+                var target = parent.Combine(folder.Name);
+                if (await Workspace.ExistsAsync(target.Value, ct)) return Fail($"{target.Value} already exists.");
+                summary = $"Move the knowledge base folder {folder.Value} to {(parent.IsRoot ? "the root" : parent.Value)}";
+                files.Add($"{root}/{target.Value}/");
+                break;
+            }
+            default:
+                stats = await Workspace.GetFolderStatsAsync(folder.Value, ct);
+                summary = $"Delete the knowledge base folder {folder.Value}, with its {stats.Pages} pages and {stats.Folders} subfolders";
+                break;
+        }
+
+        var preview = new MutationResult { Success = true, IsPreview = true, Operation = tool, Entity = folder.Value, Summary = summary, AffectedFiles = files };
+        return new KbFolderPlan(preview, folder.Value, stats);
+    }
+
+    /// <summary>Runs a folder change that <see cref="PlanFolderAsync"/> accepted, after checking it again.</summary>
+    public async Task<MutationResult> ApplyFolderAsync(KbFolderEditKind kind, KbFolderPlan plan, string? argument, CancellationToken ct = default)
+    {
+        var result = new MutationResult { Operation = ToolName(kind), Entity = plan.FolderPath, Summary = plan.Preview.Summary, AffectedFiles = plan.Preview.AffectedFiles };
+        try
+        {
+            var check = await PlanFolderAsync(kind, plan.FolderPath, argument, ct);
+            if (!check.Preview.Success)
+            {
+                result.Error = check.Preview.Error;
+                return result;
+            }
+            switch (kind)
+            {
+                case KbFolderEditKind.Create:
+                    await Workspace.CreateFolderAsync(plan.FolderPath, ct);
+                    break;
+                case KbFolderEditKind.Rename:
+                case KbFolderEditKind.Move:
+                {
+                    var moved = kind == KbFolderEditKind.Rename
+                        ? await Workspace.RenameAsync(plan.FolderPath, argument!.Trim(), ct)
+                        : await Workspace.MoveAsync(plan.FolderPath, argument?.Trim().Trim('/') ?? "", ct);
+                    result.Summary += $". Links updated in {moved.PagesChanged} pages";
+                    if (moved.FailedPages.Count > 0) result.Summary += $"; links could not be updated in {string.Join(", ", moved.FailedPages)}";
+                    break;
+                }
+                default:
+                    if (check.Stats != plan.Stats)
+                    {
+                        result.Error = $"{plan.FolderPath} changed since the change was proposed.";
+                        return result;
+                    }
+                    await Workspace.DeleteAsync(plan.FolderPath, ct);
+                    break;
+            }
+            result.Success = true;
+        }
+        catch (KnowledgeNotFoundException) { result.Error = $"No folder at {plan.FolderPath}"; }
+        catch (KnowledgeException ex) { result.Error = ex.Message; }
+        return result;
+    }
 }
+
+public enum KbFolderEditKind { Create, Rename, Move, Delete }
+
+/// <summary>A checked folder change: what the user sees, the folder, and (delete only) its contents when it was checked.</summary>
+public sealed record KbFolderPlan(MutationResult Preview, string FolderPath, FolderStats? Stats);
 
 public enum KbEditKind { Create, Update, Delete }
 

@@ -253,7 +253,132 @@ public class SearchKnowledgeBaseTests : IDisposable
 
         await Retriever().RetrieveAsync(Title, "necklace", "test-model", CancellationToken.None);
 
-        Assert.DoesNotContain(_chat.Options[0]!.Tools!, t => KnowledgeBaseTools.EditToolNames.Contains(t.Name));
+        Assert.DoesNotContain(_chat.Options[0]!.Tools!, t => KnowledgeBaseTools.EditToolNames.Contains(t.Name) || KnowledgeBaseTools.FolderToolNames.Contains(t.Name));
+    }
+
+    // ── Chat folder management ──────────────────────────────────────
+
+    async Task<IStoryChatService> ProposeAsync(params FunctionCallContent[] calls)
+    {
+        _chat.EnqueueCalls(calls).EnqueueText("Proposed.");
+        var chat = Chat();
+        await SendAsync(chat, "Tidy the folders.");
+        return chat;
+    }
+
+    async Task ApplyAllAsync(IStoryChatService chat)
+    {
+        foreach (var p in chat.PendingChanges(Title))
+        {
+            var result = await chat.ApplyPendingAsync(Title, p.Id);
+            Assert.True(result!.Success, result.Error);
+        }
+    }
+
+    [Fact]
+    public async Task Chat_offers_the_folder_tools()
+    {
+        await SeedAsync();
+        _chat.EnqueueText("ok");
+
+        await SendAsync(Chat(), kb: true);
+
+        var names = _chat.Options[0]!.Tools!.Select(t => t.Name).ToHashSet();
+        Assert.Superset(KnowledgeBaseTools.FolderToolNames.ToHashSet(), names);
+        Assert.Contains("kb_move_folder", _chat.Requests[0][0].Text);
+    }
+
+    [Fact]
+    public async Task Chat_creates_a_nested_folder_only_on_Apply()
+    {
+        await SeedAsync();
+        var chat = await ProposeAsync(ScriptedChatClient.Call("c1", "kb_create_folder", ("path", "Places/North")));
+        var kb = await _kbs.OpenAsync(Title);
+
+        Assert.Equal("kb_create_folder", Assert.Single(chat.PendingChanges(Title)).ToolName);
+        Assert.False(await kb.Workspace.ExistsAsync("Places/North"));
+
+        await ApplyAllAsync(chat);
+
+        Assert.True(await kb.Workspace.ExistsAsync("Places/North"));
+    }
+
+    [Fact]
+    public async Task Chat_renames_a_folder_and_links_to_its_pages_follow()
+    {
+        var kb = await SeedAsync();
+        await kb.Workspace.SavePageAsync("Freya.md", "Freya wears [[Lore/Necklace]].\n", 0);
+        var chat = await ProposeAsync(ScriptedChatClient.Call("c1", "kb_rename_folder", ("path", "Lore"), ("newName", "Artifacts")));
+
+        Assert.Contains("Lore to Artifacts", Assert.Single(chat.PendingChanges(Title)).Preview.Summary);
+        await ApplyAllAsync(chat);
+
+        Assert.True(await kb.Workspace.ExistsAsync("Artifacts/Necklace.md"));
+        Assert.False(await kb.Workspace.ExistsAsync("Lore"));
+        Assert.Contains("[[Artifacts/Necklace]]", await PageAsync("Freya.md"));
+    }
+
+    [Fact]
+    public async Task Chat_moves_a_folder_into_another_and_back_to_the_root()
+    {
+        var kb = await SeedAsync();
+        await kb.Workspace.CreateFolderAsync("World");
+        var chat = await ProposeAsync(ScriptedChatClient.Call("c1", "kb_move_folder", ("path", "Lore"), ("newParentFolder", "World")));
+        await ApplyAllAsync(chat);
+        Assert.True(await kb.Workspace.ExistsAsync("World/Lore/Necklace.md"));
+
+        _chat.EnqueueCalls(ScriptedChatClient.Call("c2", "kb_move_folder", ("path", "World/Lore"), ("newParentFolder", ""))).EnqueueText("Proposed.");
+        await SendAsync(chat, "Move it back.");
+        await ApplyAllAsync(chat);
+
+        Assert.True(await kb.Workspace.ExistsAsync("Lore/Necklace.md"));
+    }
+
+    [Fact]
+    public async Task Chat_deletes_a_folder_with_its_pages_and_says_how_many()
+    {
+        var kb = await SeedAsync();
+        var chat = await ProposeAsync(ScriptedChatClient.Call("c1", "kb_delete_folder", ("path", "Lore")));
+
+        Assert.Contains("with its 1 pages and 0 subfolders", Assert.Single(chat.PendingChanges(Title)).Preview.Summary);
+        Assert.True(await kb.Workspace.ExistsAsync("Lore/Necklace.md"));
+        await ApplyAllAsync(chat);
+
+        Assert.False(await kb.Workspace.ExistsAsync("Lore"));
+        Assert.True(await kb.Workspace.ExistsAsync("Hrafnkel.md"));
+    }
+
+    [Fact]
+    public async Task A_folder_delete_is_refused_if_pages_were_added_after_the_proposal()
+    {
+        var kb = await SeedAsync();
+        var chat = await ProposeAsync(ScriptedChatClient.Call("c1", "kb_delete_folder", ("path", "Lore")));
+        await kb.Workspace.SavePageAsync("Lore/Runes.md", "# Runes\n", 0);
+
+        var result = await chat.ApplyPendingAsync(Title, Assert.Single(chat.PendingChanges(Title)).Id);
+
+        Assert.False(result!.Success);
+        Assert.Contains("changed since", result.Error);
+        Assert.True(await kb.Workspace.ExistsAsync("Lore/Runes.md"));
+    }
+
+    [Theory]
+    [InlineData("kb_create_folder", "Lore", "", "already exists")]
+    [InlineData("kb_rename_folder", "Missing", "New", "No folder at")]
+    [InlineData("kb_rename_folder", "Lore", "a/b", "contain")]
+    [InlineData("kb_move_folder", "Lore", "Lore", "into itself")]
+    [InlineData("kb_move_folder", "Lore", "Nowhere", "No folder at")]
+    [InlineData("kb_delete_folder", "", "", "A folder path is required")]
+    [InlineData("kb_delete_folder", "Hrafnkel.md", "", "is a page")]
+    [InlineData("kb_delete_folder", "../..", "", "are not allowed")]
+    public async Task Invalid_folder_changes_are_refused_without_a_proposal(string tool, string path, string argument, string error)
+    {
+        await SeedAsync();
+        var chat = await ProposeAsync(ScriptedChatClient.Call("c1", tool, ("path", path), ("newName", argument), ("newParentFolder", argument)));
+
+        Assert.Empty(chat.PendingChanges(Title));
+        var result = _chat.Requests[1].SelectMany(m => m.Contents).OfType<FunctionResultContent>().Single();
+        Assert.Contains(error, result.Result?.ToString());
     }
 
     [Fact]

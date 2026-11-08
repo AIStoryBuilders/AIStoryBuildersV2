@@ -110,7 +110,7 @@ A tabbed surface (opened for one story). Tabs, left→right:
 - **Chat** — "Story Chat Assistant": model dropdown + **Search knowledgebase** + clear; user/AI
   message bubbles; proposed-change cards with **Apply** / **Discard**; input + Send. (Backed by a
   knowledge-graph-aware chat over the story. With Search knowledgebase checked it can also edit
-  every Knowledgebase page, each edit shown as a proposed-change card.)
+  every Knowledgebase page and manage its folders, each change shown as a proposed-change card.)
 
 ## 3. Manuscript Editor  (`ManuscriptEditor.dc.html`)
 

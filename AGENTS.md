@@ -53,7 +53,7 @@ dotnet test AIStoryBuildersV2.Tests/AIStoryBuildersV2.Tests.csproj
 | No sync-over-async (`.Result`, `.Wait()`, `GetAwaiter().GetResult()`) in Shared code | D25 |
 | No static mutable state. Use `StoryGraphCache` with `StoryGraphContext`, and give each story its own KB. | D17, D26, D13 |
 | Every AI call gets its client from `IChatClientProvider.GetClientAsync(model)`, and only verified models are offered. The one exception is the capability probe, which builds its own client from the unsaved settings (§5.9). | D9, D10 |
-| KB tools available to story AI are prefixed `kb_` and offered only when **Search knowledgebase** is checked. Story Chat's page edits (`kb_create_page`, `kb_update_page`, `kb_delete_page`) only propose; nothing is written until the user clicks Apply. The paragraph retriever gets read tools only. | D14, Q19 |
+| KB tools available to story AI are prefixed `kb_` and offered only when **Search knowledgebase** is checked. Story Chat's page edits (`kb_create_page`, `kb_update_page`, `kb_delete_page`) and folder tools (`kb_create_folder`, `kb_rename_folder`, `kb_move_folder`, `kb_delete_folder`) only propose; nothing is written until the user clicks Apply. The paragraph retriever gets read tools only. | D14, Q19, Q20 |
 | No CDN or third-party scripts and no external fonts. Vendor everything into `wwwroot`. | D18, §9 |
 | Never put API keys, passwords, real hostnames or personal data in code, tests, logs, docs or commits | §9 |
 | Use Radzen.Blazor components (pinned at `[12.1.9]`), Material icon names and the `--asb-*` tokens in `Shared/wwwroot/app.css` | DESIGN.md |

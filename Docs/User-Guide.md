@@ -324,7 +324,19 @@ Each edit is a **Proposed change** card, such as **Proposed change · kb_update_
 
 **What you should see:** after **Apply**, the page shows the new text the next time you open the **Knowledgebase** tab. If you saved that page yourself after the AI proposed the edit, **Apply** doesn't overwrite your text. You see **Could not apply the change:** and the page stays as you saved it. Ask the chat again to get a new proposal.
 
-To rename or move folders, use the **Knowledgebase** tab. If the knowledge base is empty, create the first page there; the chat can't see an empty knowledge base.
+### Manage knowledge base folders from the chat
+
+The chat can also organize your folders. Ask it to create, rename, move or delete one. For example: *Create a folder Places/North*, *Rename the Lore folder to Artifacts*, *Move the Lore folder into World* or *Delete the Drafts folder*.
+
+Each change is a **Proposed change** card, such as **Proposed change · kb_rename_folder**. Nothing changes until you click **Apply**.
+
+**What you should see:**
+
+- After a rename or move, the **Applied:** message says how many pages had their links updated, so links to the moved pages keep working.
+- A delete card says how many pages and subfolders go with the folder. If you add or remove pages in that folder before you click **Apply**, the delete stops with **Could not apply the change:**, and nothing is deleted.
+- The **Knowledgebase** tab shows the new folders the next time you open it.
+
+If the knowledge base is empty, create the first page there; the chat can't see an empty knowledge base.
 
 To start over, click the circular arrow (**Clear conversation**). The conversation is also cleared when you close the story.
 
