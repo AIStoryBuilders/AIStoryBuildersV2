@@ -13,8 +13,8 @@ Write your next novel faster and easier.
 
 * [AIStoryBuilders](https://github.com/AIStoryBuilders/AIStoryBuilders): V1, the original Windows app. V2's
   Windows app reads and writes its story files unchanged.
-* [AIStoryBuildersOnline](https://github.com/AIStoryBuilders/AIStoryBuildersOnline): the V1 browser version, at
-  [online.aistorybuilders.com](https://online.aistorybuilders.com/)
+* [AIStoryBuildersOnline](https://github.com/AIStoryBuilders/AIStoryBuildersOnline): the V1 browser version. V2's
+  browser app has replaced it at [online.aistorybuilders.com](https://online.aistorybuilders.com/)
 * [AIOrchestrator](https://github.com/AIStoryBuilders/AIOrchestrator)
 
 ## About V2
@@ -151,6 +151,9 @@ Serve `publish/wwwroot` from any static file server. The server must:
 - send `.wasm` as `application/wasm` and `.js`/`.mjs` as `text/javascript`;
 - return `index.html` for unknown paths if you want links such as `/story/My%20Story` to survive a reload;
 - for a sub-path, set `<base href="/your-path/">` in `index.html`.
+
+On IIS or Windows Azure App Service, deploy the `web.config` and `wwwroot` from the publish folder together. The
+`web.config` does all of the above, and has the MIME types IIS lacks for `.onnx` and `.mjs`.
 
 No file is loaded from a CDN: the ONNX runtime, the model and the fonts are in the publish output.
 

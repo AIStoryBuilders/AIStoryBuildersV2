@@ -27,7 +27,9 @@
     </div>
 
     <script src="_content/AIStoryBuildersV2.Shared/asb.js"></script>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
-    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <!-- ?v=2: V1 Online used these same URLs on the same origin, and browsers keep its copies (V1 marked blazor.webassembly.js
+         immutable). V2 crashes on boot if it runs them. The value never needs changing: web.config makes these files revalidate. -->
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js?v=2"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=2"></script>
 </body>
 </html>

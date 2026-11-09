@@ -21,8 +21,8 @@ public sealed class BrowserEmbeddingGenerator(IJSRuntime js) : IEmbeddingGenerat
         await _load.WaitAsync();
         try
         {
-            // Relative to the page's <base href> (D18).
-            return _module ??= await js.InvokeAsync<IJSObjectReference>("import", "./js/embedding.js");
+            // Relative to the page's <base href> (D18). ?v=2 keeps it apart from V1 Online's file at the same URL on the same origin.
+            return _module ??= await js.InvokeAsync<IJSObjectReference>("import", "./js/embedding.js?v=2");
         }
         finally
         {

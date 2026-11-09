@@ -3,7 +3,7 @@
  * onnxruntime-web 1.21.0 and the quantized all-MiniLM-L6-v2 model are vendored in wwwroot, never loaded from a CDN.
  * Every URL is resolved against document.baseURI, so the app also works under a non-root <base href>.
  */
-import { WordPieceTokenizer } from './tokenizer.js';
+import { WordPieceTokenizer } from './tokenizer.js?v=2'; // ?v=2: V1 Online has a different file at this URL on the same origin.
 
 const HIDDEN = 384;
 let ready = null;

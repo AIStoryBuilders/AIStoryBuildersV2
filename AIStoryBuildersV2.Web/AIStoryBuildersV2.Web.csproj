@@ -30,4 +30,9 @@
     <TrimmerRootAssembly Include="OpenAI" />
   </ItemGroup>
 
+  <!-- IIS / Azure App Service settings: a web.config in the project replaces the SDK's generated one, but is not published by default (same as Online). -->
+  <Target Name="CopyWebConfigToPublish" AfterTargets="Publish">
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\web.config" DestinationFolder="$(PublishDir)" />
+  </Target>
+
 </Project>
