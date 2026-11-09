@@ -443,13 +443,17 @@
     void OnWorkspaceChanged(KnowledgeChange change) => _ = InvokeAsync(async () =>
     {
         if (loadedPath is null) return;
-        var affects = string.Equals(change.Path, loadedPath, StringComparison.OrdinalIgnoreCase)
-            || (change.OldPath is not null && string.Equals(change.OldPath, loadedPath, StringComparison.OrdinalIgnoreCase))
+        // A rename or move rewrites links in other pages and raises one change for all of them, so this page may have changed.
+        var relocated = change.Kind is ChangeKind.Renamed or ChangeKind.Moved;
+        if (relocated && change.OldPath is not null
+            && (string.Equals(change.OldPath, loadedPath, StringComparison.OrdinalIgnoreCase) || loadedPath.StartsWith(change.OldPath + "/", StringComparison.OrdinalIgnoreCase)))
+            return; // This page moved itself: the explorer navigates to the new path.
+
+        var affects = relocated
+            || string.Equals(change.Path, loadedPath, StringComparison.OrdinalIgnoreCase)
             || change.Kind == ChangeKind.Reloaded
             || (change.Kind == ChangeKind.Deleted && loadedPath.StartsWith(change.Path + "/", StringComparison.OrdinalIgnoreCase));
         if (!affects) { StateHasChanged(); return; }
-
-        if (change.Kind is ChangeKind.Renamed or ChangeKind.Moved) return; // The explorer navigates to the new path.
 
         PageContent page;
         try { page = await Workspace.ReadPageAsync(loadedPath); }

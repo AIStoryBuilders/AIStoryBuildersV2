@@ -98,6 +98,30 @@ public class ZipStoryPersistenceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_details_edit_that_hits_the_quota_fails_the_save_and_survives_a_retry()
+    {
+        await SeedSavedStoryAsync();
+        var entry = (await _library.ListAsync()).Single();
+        var used = _kv.Items.Sum(kv => (long)(kv.Key.Length + kv.Value.Length) * 2);
+        _kv.QuotaBytes = used + 100; // The zip and the old index entry still fit; the longer synopsis doesn't.
+        var synopsis = new string('s', 500);
+
+        await Assert.ThrowsAsync<StorageQuotaExceededException>(() => _library.UpsertAsync(entry with { Synopsis = synopsis }));
+        _p.MarkDirty(Title);
+        await Assert.ThrowsAsync<StorageQuotaExceededException>(() => _p.FlushAsync(Title));
+
+        Assert.True(_p.IsDirty(Title));
+        Assert.Equal(StoryPersistenceEventKind.SaveFailed, Assert.Single(_events).Kind);
+
+        _kv.QuotaBytes = null;
+        await _p.FlushAsync(Title);
+
+        Assert.False(_p.IsDirty(Title));
+        var stored = new LocalStorageStoryLibraryStore(_kv, _indexLock); // What a reload reads.
+        Assert.Equal(synopsis, (await stored.ListAsync()).Single().Synopsis);
+    }
+
+    [Fact]
     public async Task Reopening_a_dirty_story_keeps_the_unsaved_memfs_copy()
     {
         await SeedSavedStoryAsync();

@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- Keep real framework error text. Trimming would otherwise show resource keys such as Arg_NullReferenceException in toasts and the log. -->
+    <UseSystemResourceKeys>false</UseSystemResourceKeys>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,7 +6,10 @@ using System.IO.Compression;
 using Xceed.Words.NET;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Linq;
 using UglyToad.PdfPig;
+using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 using Location = AIStoryBuildersV2.Shared.Models.Location;
 
 namespace AIStoryBuildersV2.Shared.Stories;
@@ -78,8 +81,7 @@ public class ManuscriptParsingService
             statusProgress.Report("Identifying chapter boundaries…");
             _logService.WriteToLog("ManuscriptImport Phase 2: Chapter splitting…");
 
-            var sentences = SplitIntoSentences(rawText);
-            var chunks = ChunkSentences(sentences, 100);
+            var chunks = ChunkText(rawText, 100);
 
             // Internal chapter model for parsing
             var allChapters = new List<ParsedChapter>();
@@ -91,7 +93,7 @@ public class ManuscriptParsingService
                 List<ParsedChapter> chunkChapters;
                 try
                 {
-                    chunkChapters = await _orchestrator.ParseChaptersFromTextAsync(chunks[i]);
+                    chunkChapters = await _orchestrator.ParseChaptersFromTextAsync(chunks[i].Text);
                 }
                 catch (Exception ex)
                 {
@@ -99,7 +101,7 @@ public class ManuscriptParsingService
                     // Fallback: treat entire chunk as continuation
                     chunkChapters = new List<ParsedChapter>
                     {
-                        new() { Title = "Chapter 1", RawText = chunks[i] }
+                        new() { Title = "Chapter 1", RawText = chunks[i].Text }
                     };
                 }
 
@@ -115,7 +117,7 @@ public class ManuscriptParsingService
 
                     if (titlesMatch || isFallbackChunk)
                     {
-                        lastExisting.RawText += "\n" + firstNew.RawText;
+                        lastExisting.RawText += (chunks[i - 1].EndsParagraph ? "\n\n" : " ") + firstNew.RawText;
                         chunkChapters.RemoveAt(0);
                     }
                 }
@@ -336,6 +338,8 @@ public class ManuscriptParsingService
             for (int ci = 0; ci < allChapters.Count; ci++)
             {
                 var chapter = allChapters[ci];
+                // A chapter with only a heading has nothing to annotate, and an empty request is an API error.
+                if (chapter.Paragraphs.Count == 0) continue;
                 try
                 {
                     var annotated = await _orchestrator.AssociateParagraphEntitiesAsync(
@@ -495,71 +499,105 @@ public class ManuscriptParsingService
     /// <summary>More pages than any manuscript has; PdfPig keeps every page in memory (SEC-005).</summary>
     internal const int MaxPdfPages = 2_000;
 
-    private static string ExtractDocx(Stream stream)
+    internal const string UnreadableDocxMessage = "This Word file can't be read. Open it in Word, save it again and retry.";
+    internal const string UnreadablePdfMessage = "This PDF can't be read. Export it again, or import the text as a .txt file.";
+
+    private static string ExtractDocx(MemoryStream stream)
     {
         // SEC-005: a .docx is a zip. Refuse one that inflates past the limits before DocX loads it.
-        using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
+        try
+        {
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
             SafeZip.CheckLimits(archive, ZipLimits.Docx);
-        stream.Position = 0;
+        }
+        catch (InvalidDataException ex)
+        {
+            throw new InvalidDataException(UnreadableDocxMessage, ex);
+        }
+        var bytes = stream.ToArray();
 
-        using var doc = DocX.Load(stream);
-        var sb = new StringBuilder();
-        foreach (var para in doc.Paragraphs) sb.AppendLine(para.Text);
-        return sb.ToString();
+        List<string> paragraphs;
+        try
+        {
+            using var doc = DocX.Load(new MemoryStream(bytes));
+            paragraphs = doc.Paragraphs.Select(p => p.Text).ToList();
+        }
+        catch (Exception)
+        {
+            // DocX needs parts that a valid file may leave out, such as styles.
+            paragraphs = ReadDocumentXml(bytes);
+        }
+
+        // Each Word paragraph is a paragraph of the story; the blank line keeps them apart in SplitIntoParagraphs.
+        return string.Join("\n\n", paragraphs.Where(p => !string.IsNullOrWhiteSpace(p)));
+    }
+
+    private static List<string> ReadDocumentXml(byte[] bytes)
+    {
+        XNamespace w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+        try
+        {
+            using var archive = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
+            var entry = archive.GetEntry("word/document.xml") ?? throw new InvalidDataException(UnreadableDocxMessage);
+            using var xml = entry.Open();
+            using var reader = XmlReader.Create(xml, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null });
+            return XDocument.Load(reader).Descendants(w + "p")
+                .Select(p => string.Concat(p.Descendants(w + "t").Select(t => t.Value)))
+                .ToList();
+        }
+        catch (XmlException ex)
+        {
+            throw new InvalidDataException(UnreadableDocxMessage, ex);
+        }
     }
 
     private static string ExtractPdf(Stream stream)
     {
-        using var document = PdfDocument.Open(stream);
-        if (document.NumberOfPages > MaxPdfPages) throw new InvalidDataException(SafeZip.TooLargeMessage);
-        var sb = new StringBuilder();
-        foreach (var page in document.GetPages()) sb.AppendLine(page.Text);
-        return sb.ToString();
+        try
+        {
+            using var document = PdfDocument.Open(stream);
+            if (document.NumberOfPages > MaxPdfPages) throw new InvalidDataException(SafeZip.TooLargeMessage);
+            var sb = new StringBuilder();
+            // page.Text has no line breaks, which makes a whole chapter look like one heading line.
+            foreach (var page in document.GetPages()) sb.AppendLine(ContentOrderTextExtractor.GetText(page, addDoubleNewline: true));
+            return sb.ToString();
+        }
+        catch (Exception ex) when (ex is not InvalidDataException)
+        {
+            throw new InvalidDataException(UnreadablePdfMessage, ex);
+        }
     }
 
     // ═══════════════════════════════════════════════════════
-    //  Sentence Splitting & Chunking
+    //  Chunking
     // ═══════════════════════════════════════════════════════
 
-    private static List<string> SplitIntoSentences(string text)
+    private static readonly Regex SentenceBoundary = new("""(?<=[.!?])\s+(?=[A-Z"'\(\[])""");
+    private static readonly Regex LineBoundary = new(@"\s*\n\s*");
+
+    /// <summary>A piece of the manuscript for the chapter-boundary call, and whether a paragraph break followed it.</summary>
+    internal readonly record struct ManuscriptChunk(string Text, bool EndsParagraph);
+
+    /// <summary>
+    /// Cuts the text at every Nth sentence end. The text between cuts is left as it is, because the paragraph breaks in
+    /// it are what <see cref="SplitIntoParagraphs"/> works from later (V1 joined the sentences with spaces and lost them).
+    /// </summary>
+    internal static List<ManuscriptChunk> ChunkText(string text, int sentencesPerChunk)
     {
-        var sentences = new List<string>();
-        var pattern = """(?<=[.!?])\s+(?=[A-Z"'\(\[])""";
-        var parts = Regex.Split(text.Trim(), pattern);
+        text = text.Trim();
+        var boundaries = SentenceBoundary.Matches(text);
+        if (boundaries.Count == 0 && text.Length > 1000) boundaries = LineBoundary.Matches(text);
 
-        foreach (var part in parts)
+        var chunks = new List<ManuscriptChunk>();
+        int start = 0, sentences = 0;
+        foreach (Match boundary in boundaries)
         {
-            var trimmed = part.Trim();
-            if (!string.IsNullOrWhiteSpace(trimmed))
-                sentences.Add(trimmed);
+            if (++sentences < sentencesPerChunk) continue;
+            chunks.Add(new ManuscriptChunk(text[start..boundary.Index], boundary.Value.Count(c => c == '\n') >= 2));
+            start = boundary.Index + boundary.Length;
+            sentences = 0;
         }
-
-        if (sentences.Count <= 1 && text.Length > 1000)
-        {
-            sentences.Clear();
-            foreach (var line in text.Split('\n'))
-            {
-                var t = line.Trim();
-                if (!string.IsNullOrWhiteSpace(t))
-                    sentences.Add(t);
-            }
-        }
-
-        return sentences;
-    }
-
-    private static List<string> ChunkSentences(List<string> sentences, int chunkSize)
-    {
-        var chunks = new List<string>();
-        for (int i = 0; i < sentences.Count; i += chunkSize)
-        {
-            var batch = sentences.Skip(i).Take(chunkSize);
-            chunks.Add(string.Join(" ", batch));
-        }
-
-        if (chunks.Count == 0)
-            chunks.Add(string.Join(" ", sentences));
-
+        chunks.Add(new ManuscriptChunk(text[start..], true));
         return chunks;
     }
 
@@ -567,7 +605,7 @@ public class ManuscriptParsingService
     //  Paragraph Splitting
     // ═══════════════════════════════════════════════════════
 
-    private static List<ParsedParagraph> SplitIntoParagraphs(string rawText)
+    internal static List<ParsedParagraph> SplitIntoParagraphs(string rawText)
     {
         var paragraphs = new List<ParsedParagraph>();
         if (string.IsNullOrWhiteSpace(rawText))
@@ -597,51 +635,45 @@ public class ManuscriptParsingService
     //  Chapter Heading Removal
     // ═══════════════════════════════════════════════════════
 
-    private static string StripChapterHeading(string rawText, string chapterTitle)
+    private const string Numeral = @"(\d+|(?-i:[IVXLCDM]+)|(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)([ -](one|two|three|four|five|six|seven|eight|nine))?)";
+    private static readonly Regex ChapterPrefix = new($@"^chapter\s+{Numeral}\b[\s:.\-–—]*", RegexOptions.IgnoreCase);
+    private static readonly Regex HeadingWord = new($@"^(chapter\b|(part|book|section|act)\s+{Numeral}\b|prologue\b|epilogue\b)", RegexOptions.IgnoreCase);
+    private static readonly Regex BareNumber = new(@"^(\d+|[IVXLCDM]+\.?)$");
+    private const int MaxHeadingWords = 12;
+
+    /// <summary>
+    /// Removes the heading from the start of a chapter and keeps everything else. A first line that only begins with a
+    /// heading word ("Part of me wanted to leave.") is prose, and text without line breaks has the prose on the same line.
+    /// </summary>
+    internal static string StripChapterHeading(string rawText, string chapterTitle)
     {
         if (string.IsNullOrWhiteSpace(rawText) || string.IsNullOrWhiteSpace(chapterTitle))
             return rawText;
 
         var lines = rawText.Split('\n');
-        int linesToSkip = 0;
+        var first = Array.FindIndex(lines, line => !string.IsNullOrWhiteSpace(line));
+        if (first < 0 || first >= 3) return rawText;
 
-        for (int i = 0; i < Math.Min(lines.Length, 3); i++)
-        {
-            var trimmed = lines[i].Trim();
-            if (string.IsNullOrWhiteSpace(trimmed))
-            {
-                linesToSkip++;
-                continue;
-            }
+        var remainder = TextAfterHeading(lines[first].Trim().TrimStart('#', ' '), chapterTitle.Trim());
+        if (remainder is null) return rawText;
 
-            bool isHeading =
-                trimmed.Equals(chapterTitle, StringComparison.OrdinalIgnoreCase) ||
-                trimmed.StartsWith("chapter", StringComparison.OrdinalIgnoreCase) ||
-                Regex.IsMatch(trimmed, @"^(part|book|section|act|prologue|epilogue)\b",
-                              RegexOptions.IgnoreCase) ||
-                Regex.IsMatch(trimmed, @"^\d+$") ||
-                Regex.IsMatch(trimmed, @"^[IVXLCDM]+\.?$");
+        var rest = lines.Skip(first + 1);
+        return string.Join('\n', remainder.Length == 0 ? rest : rest.Prepend(remainder)).TrimStart();
+    }
 
-            if (isHeading)
-            {
-                linesToSkip = i + 1;
-                while (linesToSkip < lines.Length
-                    && string.IsNullOrWhiteSpace(lines[linesToSkip]))
-                {
-                    linesToSkip++;
-                }
-                break;
-            }
-            else
-            {
-                break;
-            }
-        }
+    /// <summary>The text after the heading on this line: empty for a line that is only a heading, null for no heading.</summary>
+    private static string TextAfterHeading(string line, string title)
+    {
+        if (line.Equals(title, StringComparison.OrdinalIgnoreCase) || BareNumber.IsMatch(line)) return "";
 
-        if (linesToSkip == 0)
-            return rawText;
+        var words = line.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        var endsLikeProse = line.EndsWith('!') || line.EndsWith('?') || line.EndsWith(',') || line.EndsWith(';') || (line.EndsWith('.') && words > 3);
+        if (words <= MaxHeadingWords && !endsLikeProse && HeadingWord.IsMatch(line)) return "";
 
-        return string.Join('\n', lines.Skip(linesToSkip));
+        var rest = line[ChapterPrefix.Match(line).Length..];
+        if (rest.StartsWith(title, StringComparison.OrdinalIgnoreCase) && (rest.Length == title.Length || !char.IsLetterOrDigit(rest[title.Length])))
+            rest = rest[title.Length..].TrimStart(' ', ':', '.', '-', '–', '—');
+        return rest.Length == line.Length ? null : rest;
     }
 
     // ═══════════════════════════════════════════════════════

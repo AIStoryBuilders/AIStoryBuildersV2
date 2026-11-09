@@ -267,7 +267,7 @@ else
         }
         catch (StorageQuotaExceededException)
         {
-            Notify.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Browser storage is full", Detail = "The story was not imported. Delete stories you don't need, then try again.", Duration = double.MaxValue });
+            Notify.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Browser storage is full", Detail = "The story was not imported. Delete stories you don't need, then try again.", Duration = int.MaxValue });
         }
         catch (Exception ex)
         {

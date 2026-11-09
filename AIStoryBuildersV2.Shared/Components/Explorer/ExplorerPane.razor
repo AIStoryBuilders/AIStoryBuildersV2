@@ -92,7 +92,7 @@
     string? dragSource;
     string? dropTarget;
     string? lastSelected;
-    /// <summary>The folder clicked since the last page opened; New page and New folder go there (UI-Behavior-Spec §17.2).</summary>
+    /// <summary>The folder clicked since the last page opened; New page, New folder, F2 and Del act on it (UI-Behavior-Spec §17.2).</summary>
     string? selectedFolder;
     ElementReference scrollRef;
     DotNetObjectReference<ExplorerPane>? self;
@@ -154,8 +154,19 @@
         if (!string.IsNullOrWhiteSpace(query)) await RunSearchAsync(query, CancellationToken.None);
     }
 
+    static bool IsSameOrInside(string path, string folder) =>
+        string.Equals(path, folder, StringComparison.OrdinalIgnoreCase) || path.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase);
+
     void OnWorkspaceChanged(KnowledgeChange change) => _ = InvokeAsync(async () =>
     {
+        // Nothing may keep pointing at a path that no longer exists: F2, Del and New page all act on these.
+        if (change.Kind is ChangeKind.Deleted or ChangeKind.Renamed or ChangeKind.Moved)
+        {
+            var gone = change.OldPath ?? change.Path;
+            foreach (var path in nodes.Keys.Where(p => IsSameOrInside(p, gone)).ToList()) nodes.Remove(path);
+            if (selectedFolder is not null && IsSameOrInside(selectedFolder, gone))
+                selectedFolder = change.OldPath is null ? null : change.Path + selectedFolder[gone.Length..];
+        }
         if (change.Kind is ChangeKind.Renamed or ChangeKind.Moved && change.OldPath is not null)
         {
             foreach (var f in State.ExpandedFolders.ToList())
@@ -242,6 +253,7 @@
             }
             return;
         }
+        selectedFolder = null;
         // Selecting the open page from code (the Selected parameter) raises Change too; it's already open.
         if (string.Equals(path, SelectedPath, StringComparison.OrdinalIgnoreCase)) return;
         await OpenAsync(path);
@@ -308,7 +320,9 @@
     [JSInvokable]
     public Task OnTreeKey(string key) => InvokeAsync(async () =>
     {
-        if (SelectedPath is null || !nodes.TryGetValue(SelectedPath, out var node)) return;
+        // The highlighted row: a folder clicked since the last page opened, otherwise the open page.
+        var path = selectedFolder ?? SelectedPath;
+        if (path is null || !nodes.TryGetValue(path, out var node)) return;
         if (key == "F2") await RenameAsync(node);
         else if (key == "Delete") await DeleteAsync(node);
     });

@@ -100,6 +100,54 @@ public class LocalStorageStoryLibraryStoreTests
     }
 
     [Fact]
+    public async Task An_edit_that_hits_the_quota_stays_visible_and_is_written_by_the_next_upsert()
+    {
+        var saved = new DateTimeOffset(2026, 11, 4, 17, 20, 0, TimeSpan.Zero);
+        var store = Store;
+        await store.UpsertAsync(new StoryIndexEntry("0", "A", "S", "T", "Old", "", saved));
+        _kv.QuotaBytes = _kv.Items[StoryStorageConstants.StoriesIndexKey].Length * 2L + StoryStorageConstants.StoriesIndexKey.Length * 2L;
+
+        await Assert.ThrowsAsync<StorageQuotaExceededException>(() =>
+            store.UpsertAsync(new StoryIndexEntry("0", "A", "S", "T", new string('n', 500), "", saved.AddHours(1))));
+
+        var shown = Assert.Single(await store.ListAsync());
+        Assert.Equal(500, shown.Synopsis.Length);
+        Assert.Equal(saved, shown.SavedAt); // Another tab's save is recognized by this value.
+        Assert.Equal("Old", Assert.Single(await Store.ListAsync()).Synopsis); // Nothing was stored.
+
+        _kv.QuotaBytes = null;
+        await store.UpsertAsync(shown with { SavedAt = saved.AddHours(2) });
+
+        Assert.Equal(500, Assert.Single(await Store.ListAsync()).Synopsis.Length);
+    }
+
+    [Fact]
+    public async Task A_new_story_that_hits_the_quota_does_not_appear_in_the_list()
+    {
+        var store = Store;
+        _kv.QuotaBytes = 10;
+
+        await Assert.ThrowsAsync<StorageQuotaExceededException>(() => store.UpsertAsync(new StoryIndexEntry("0", "A", "S", "T", "1", "", null)));
+
+        Assert.Empty(await store.ListAsync());
+    }
+
+    [Fact]
+    public async Task Removing_a_story_forgets_its_unsaved_edit()
+    {
+        var store = Store;
+        await store.UpsertAsync(new StoryIndexEntry("0", "A", "S", "T", "1", "", null));
+        _kv.QuotaBytes = 10;
+        await Assert.ThrowsAsync<StorageQuotaExceededException>(() => store.UpsertAsync(new StoryIndexEntry("0", "A", "S", "T", "2", "", null)));
+        _kv.QuotaBytes = null;
+
+        await store.RemoveAsync("A");
+        await store.UpsertAsync(new StoryIndexEntry("0", "A", "S", "T", "3", "", null));
+
+        Assert.Equal("3", Assert.Single(await store.ListAsync()).Synopsis);
+    }
+
+    [Fact]
     public async Task Index_mutations_run_inside_the_shared_lock()
     {
         var store = Store;
