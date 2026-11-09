@@ -211,8 +211,9 @@
             else
             {
                 var isOpen = string.Equals(node.Path, SelectedPath, StringComparison.OrdinalIgnoreCase);
-                @* A new SelectionVersion recreates the open page's item, which re-selects it in the tree. *@
-                <RadzenTreeItem @key="@(isOpen ? $"{node.Path}#{SelectionVersion}" : node.Path)" Value="@node.Path" Text="@node.Name" HasChildren="false"
+                @* A new SelectionVersion recreates the items, which re-selects the open page in the tree. The key must not depend
+                   on which page is open: that would recreate the row just clicked and drop the focus that F2 and Del need. *@
+                <RadzenTreeItem @key="@($"{node.Path}#{SelectionVersion}")" Value="@node.Path" Text="@node.Name" HasChildren="false"
                                 Template="@NodeTemplate" Selected="@isOpen" />
             }
         }
