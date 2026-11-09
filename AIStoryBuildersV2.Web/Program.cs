@@ -1,6 +1,7 @@
 using AIStoryBuildersV2.Shared;
 using AIStoryBuildersV2.Shared.Hosting;
 using AIStoryBuildersV2.Shared.Knowledge.Persistence;
+using AIStoryBuildersV2.Shared.Services;
 using AIStoryBuildersV2.Shared.Settings;
 using AIStoryBuildersV2.Shared.Stories;
 using AIStoryBuildersV2.Shared.Stories.Storage;
@@ -33,6 +34,7 @@ builder.Services.AddSingleton<IStoryLibraryStore, LocalStorageStoryLibraryStore>
 builder.Services.AddSingleton<IAppDataStore, LocalStorageAppDataStore>();
 builder.Services.AddSingleton<IEmbeddingGenerator<string, Embedding<float>>, BrowserEmbeddingGenerator>();
 builder.Services.AddSingleton<ISettingsStore, BrowserSettingsStore>();
+builder.Services.AddSingleton<IUpdateCheck, OnlineUpdateCheck>();
 builder.Services.AddAIStoryBuildersV2Shared();
 
 var host = builder.Build();

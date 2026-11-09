@@ -63,6 +63,7 @@ Layout: [Library.dc.html](Design/Library.dc.html) top bar. Logo, wordmark "AI St
 
 | Control | Style/icon | Enabled when | Action | Confirm | Success | Failure |
 |---|---|---|---|---|---|---|
+| Get a Developmental Edit Report **(new, Plan Q24)** | purple pill link, left of Home · — | always | open `https://Pro.AIStoryBuilders.com` outside the app | — | — | — |
 | Home | `RadzenMenuItem` · `home` | always | navigate `/` | — | Item shows the selected state | — |
 | Logs | menu · `assignment` | always | navigate `/logs` | — | selected state | — |
 | Settings | menu · `line_style` | always | navigate `/settings` | — | selected state | — |
@@ -70,7 +71,8 @@ Layout: [Library.dc.html](Design/Library.dc.html) top bar. Logo, wordmark "AI St
 
 - Icons are V1's ([Index.razor:20-32](../../../ADefWebserver/AIStoryBuilders/Components/Pages/Index.razor)).
 - V1 hides Home, Logs and Utility until a key is set. V2 always shows Home, Logs, Settings and Help (Plan §5.6, Q18); V1's Utility is removed (D23). **First run:** when `Settings.GetAsync()` returns `ApiKeyConfigured == false` for a provider that needs a key, the first navigation to `/` redirects to `/settings` once per app start (Plan §5.4 "The first run starts at Settings").
-- The menu is hidden inside `/story/*`, which has its own top bar ([StoryWorkspace.dc.html](Design/StoryWorkspace.dc.html)).
+- The menu and the pill are hidden inside `/story/*`, which has its own top bar ([StoryWorkspace.dc.html](Design/StoryWorkspace.dc.html)).
+- **Update check, browser app only (V1 Online, Plan Q24):** once per app start, `GET https://aistorybuilders.com/api/VersionOnline/getversiononline?paramGUID={guid}&paramCurrentVersion={version}`. If the published version is newer, a strip under the top bar links "* Update Available - Close web browser and reload *" to the documentation site. A failed check shows nothing. The Windows app makes no check.
 
 ---
 

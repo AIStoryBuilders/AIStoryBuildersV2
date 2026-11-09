@@ -14,6 +14,8 @@
   --asb-accent: #5B4FD6;
   --asb-accent-soft: #efecfb;
   --asb-accent-line: #ddd6f6;
+  --asb-purple: #7C3AED;
+  --asb-purple-dark: #6D28D9;
   --asb-ink: #1c1a27;
   --asb-muted: #6b6676;
   --asb-paper: #fffdf9;
@@ -64,6 +66,17 @@ a { color: var(--asb-accent); }
 .asb-ttl b { font-size: 15.5px; font-weight: 700; letter-spacing: -0.015em; white-space: nowrap; color: var(--asb-ink); }
 .asb-ttl span { font-size: 11px; color: var(--asb-muted); white-space: nowrap; }
 .asb-sp { flex: 1; }
+.asb-pro-pill { flex: 0 0 auto; padding: 7px 14px; border-radius: 999px; background: var(--asb-purple); color: #fff;
+  font-size: 12.5px; font-weight: 600; line-height: 1.2; white-space: nowrap; text-decoration: none; }
+.asb-pro-pill:hover { background: var(--asb-purple-dark); color: #fff; }
+.asb-pro-pill:focus-visible { outline: 2px solid var(--asb-purple); outline-offset: 2px; }
+.asb-update { flex: 0 0 auto; padding: 8px 20px; text-align: center; font-size: 13px; font-weight: 600;
+  background: var(--asb-accent-soft); border-bottom: 1px solid var(--asb-accent-line); }
+/* The pill makes the main bar wider than the workspace bar, so it moves its menu to a second row sooner. */
+@media (max-width: 900px) {
+  .asb-main-top { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 8px; }
+  .asb-main-top .asb-menu.rz-menu { order: 3; width: 100%; overflow-x: auto; }
+}
 
 /* ---------- main menu (RadzenMenu restyled as the artboard's .menu) ---------- */
 .asb-topbar ul.rz-menu.asb-menu { background: transparent; border: none; box-shadow: none; padding: 0; margin: 0; display: flex; gap: 2px;

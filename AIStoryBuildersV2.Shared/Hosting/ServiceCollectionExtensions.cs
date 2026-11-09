@@ -24,6 +24,8 @@ public static class ServiceCollectionExtensions
         // Scoped: in MAUI, IJSRuntime is scoped to the BlazorWebView, so a singleton would capture the root one and fail.
         services.AddScoped<BrowserInterop>();
         services.AddSingleton<AppSession>();
+        // The browser host registers OnlineUpdateCheck (plan Q24).
+        services.TryAddSingleton<IUpdateCheck, NoUpdateCheck>();
 
         // The .stybld and graph manifests carry V1's version as a fixed format version (D6).
         services.AddSingleton(new AppMetadata { Version = StoryStorageConstants.StybldFormatVersion });

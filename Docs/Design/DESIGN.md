@@ -67,7 +67,8 @@ HTML + inline SVG only because they are static mockups.
 
 Top bar: the AIStoryBuilders logo + wordmark, then a `RadzenMenu`. The artboard shows **Home · Logs ·
 Utility · Settings**; the app has **Home · Logs · Settings · Help** (Utility removed, D23; Help added,
-plan Q18). The selected menu item swaps the page body.
+plan Q18). The selected menu item swaps the page body. A purple pill link (`--asb-purple`), **Get a
+Developmental Edit Report**, sits to the left of the menu (plan Q24).
 
 - **Home** — action row: **New Story** (success, `add`), **Import Story** (light, `publish` — opens
   a `.stybld` project), **Import docx / pdf / txt** (info, `description` — manuscript import with a

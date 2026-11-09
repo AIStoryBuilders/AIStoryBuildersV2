@@ -26,6 +26,8 @@ You need:
 There are no user accounts, sign-in or roles. Everyone who opens the app on a computer or browser sees the same stories and settings.
 
 > **Note:** Text that the AI reads is sent to the provider you choose. Ollama keeps everything on the computer that runs it. Embeddings (used to search your story) are always made on your own computer.
+>
+> When it starts, the browser version asks the AI StoryBuilders website whether an update is available. It sends only the app's version and a random ID for that browser, never your stories or your key.
 
 ## How it works
 

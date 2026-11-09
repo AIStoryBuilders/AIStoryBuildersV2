@@ -49,6 +49,7 @@ public static class StoryStorageConstants
     public static string ZipKey(string title) => KeyPrefix + "story:" + title;
     public const string LogKey = KeyPrefix + "log";
     public const string SettingsKey = KeyPrefix + "settings";
+    public const string BrowserGuidKey = KeyPrefix + "guid";
     public const int SaveDebounceMs = 1500;
     public const long AssumedQuotaBytes = 5_000_000;
     public const double WarnAtFraction = 0.8;
