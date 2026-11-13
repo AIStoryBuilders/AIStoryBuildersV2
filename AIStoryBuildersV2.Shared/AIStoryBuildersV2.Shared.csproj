@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!-- UI -->
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0-rc.3.26522.148" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0" />
     <PackageReference Include="Radzen.Blazor" Version="[12.1.9]" />
 
     <!-- Content / parsing (manuscript import, world facts, markdown knowledgebase) -->

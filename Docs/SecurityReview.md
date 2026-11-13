@@ -244,14 +244,14 @@ flowchart TD
 | [SEC-006](#sec-006---logs-contain-story-prose-ai-output-and-unredacted-provider-errors) | Logs contain story prose, AI output and unredacted provider errors | **Low** | A09 Security Logging and Monitoring Failures | Open |
 | [SEC-007](#sec-007---azure-openai-api-key-can-be-sent-over-plain-http) | Azure OpenAI API key can be sent over plain HTTP | **Low** | A02 Cryptographic Failures | Open |
 | [SEC-008](#sec-008---untrusted-story-text-is-placed-inside-prompt-delimiters-without-escaping) | Untrusted story text is placed inside prompt delimiters without escaping | **Low** | A03 Injection (prompt injection) | Open |
-| [SEC-009](#sec-009---pre-release-net-11-rc-and-aspire-preview-toolchain) | Pre-release .NET 11 RC and Aspire preview toolchain | **Informational** | A06 Vulnerable and Outdated Components | Open |
+| [SEC-009](#sec-009---pre-release-net-11-rc-and-aspire-preview-toolchain) | Pre-release .NET 11 RC and Aspire preview toolchain | **Informational** | A06 Vulnerable and Outdated Components | Resolved 2026-11-13 (moved to .NET 11 GA; Aspire preview accepted, dev-time only) |
 | [SEC-010](#sec-010---outdated-file-parser-packages-and-an-untracked-vendored-library) | Outdated file-parser packages and an untracked vendored library | **Informational** | A06 Vulnerable and Outdated Components | Open |
 
 **Totals:** Critical 0 · High 1 · Medium 4 · Low 3 · Informational 2
 
 ### Remediation status
 
-SEC-001, SEC-002 and SEC-005 are fixed in the working tree. The rest are still open. Each fix follows its **Recommended fix** below, with the differences listed here (also recorded in plan §14 Q17).
+SEC-001, SEC-002 and SEC-005 are fixed in the working tree, and SEC-009 was resolved on 2026-11-13 by the move to .NET 11 GA. The rest are still open. Each fix follows its **Recommended fix** below, with the differences listed here (also recorded in plan §14 Q17).
 
 > **Changes since this review (2026-11-07, plan Q19 and Q20).**
 >
@@ -1070,6 +1070,19 @@ Until then, do not publish the WASM app to an internet-facing host for general u
 
 `dotnet --version` prints the GA SDK, `dotnet list package` shows no `-rc` or `-preview` versions for shipped projects, and the three AGENTS.md build and test commands pass.
 
+**Resolution (2026-11-13)**
+
+| What | Before | After |
+|---|---|---|
+| `global.json` | `11.0.100-rc.3.26522.148`, `allowPrerelease: true`, `rollForward: latestFeature` | `11.0.100`, `rollForward: latestFeature`, no `allowPrerelease` |
+| `Microsoft.AspNetCore.Components.Web` (Shared) | `11.0.0-rc.3.26522.148` | `11.0.0` |
+| `Microsoft.AspNetCore.Components.WebAssembly` and `.DevServer` (Web) | `11.0.0-rc.3.26522.148` | `11.0.0` |
+| `Microsoft.Extensions.Logging.Debug` (MAUI) | `11.0.0-rc.3.26522.148` | `11.0.0` |
+| `Microsoft.Extensions.Validation` (transitive, via Shared) | `11.0.0-rc.3.26522.148` (NU1902, GHSA-m28h-pj36-4364) | `11.0.0` (no warning) |
+| `$(MauiVersion)` (workload) | `11.0.0-rc.2.26505.5` | `11.0.0` |
+
+`rollForward` stays `latestFeature` (not `latestPatch` as suggested above) so a newer feature-band SDK from a Visual Studio update still builds the repo. `Aspire.Hosting.Maui 13.6.4-preview.1.26523.11` is unchanged: it is the AppHost's dev-time orchestration and is not shipped. Verified with the three AGENTS.md commands and `dotnet list package --include-transitive` on the Web and Shared projects.
+
 ---
 
 #### SEC-010 - Outdated file-parser packages and an untracked vendored library
@@ -1197,7 +1210,7 @@ Each item below can be its own commit or PR. Follow AGENTS.md: run the three bui
 
 | Component | Version | Status |
 |---|---|---|
-| .NET SDK / runtime | 11.0.100-rc.3.26522.148 / 11.0.0-rc.3 | Pre-release (SEC-009) |
+| .NET SDK / runtime | 11.0.100 / 11.0.0 | GA (SEC-009 resolved 2026-11-13; was 11.0.100-rc.3.26522.148 / 11.0.0-rc.3 at review time) |
 | Aspire AppHost SDK / Aspire.Hosting.Maui | 13.6.4 / 13.6.4-preview.1 | Dev-time only, not shipped |
 | Microsoft.ML.OnnxRuntime | 1.24.3 | Current; no advisories found |
 

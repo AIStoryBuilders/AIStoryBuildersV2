@@ -8,7 +8,7 @@ This file contains no secrets. Supply keys only through environment variables or
 | Item | Version | Notes |
 |---|---|---|
 | Windows | 10.0.19041 or later | The MAUI app's Windows TFM is `net11.0-windows10.0.19041.0` |
-| .NET SDK | `11.0.100` | Pinned in `global.json` (plan §6.6) with `rollForward: latestFeature`. It replaced the `11.0.100-rc.3.26522.148` pin when the GA SDK arrived through a Visual Studio update and removed rc.3. The NuGet packages are still the RC versions (plan D1). The .NET 10 SDKs can stay installed. |
+| .NET SDK | `11.0.100` | Pinned in `global.json` (plan §6.6) with `rollForward: latestFeature`. It replaced the `11.0.100-rc.3.26522.148` pin when the GA SDK arrived through a Visual Studio update and removed rc.3. The NuGet packages are on .NET 11 GA too. The .NET 10 SDKs can stay installed. |
 | MAUI workload | `maui-windows 11.0.0/11.0.100` (workload version `11.0.100.1`) | CLI-managed (`dotnet workload list`). It sets `$(MauiVersion)` to 11.0.0. Workloads belong to an SDK band, so a new SDK band needs the workload installed again (§2). |
 | Visual Studio | 18.x with the .NET MAUI workload | Optional for the Web app, practical for MAUI debugging |
 | Aspire | `Aspire.AppHost.Sdk 13.6.4`, `Aspire.Hosting.Maui 13.6.4-preview.1.26523.11` | Dev-time only (plan G1). The `aspire` CLI is optional. |

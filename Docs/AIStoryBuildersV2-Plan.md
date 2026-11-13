@@ -34,7 +34,7 @@ Links into other repositories are relative to this file and assume the sibling c
 
 The scaffold already has KGB's shape: a MAUI app, a WASM app, a Shared RCL, an AppHost, ServiceDefaults and Tests. This plan:
 
-1. **Retargets everything to .NET 11.** The installed SDK is `11.0.100-rc.3`, so for now that means release-candidate packages (D1).
+1. **Retargets everything to .NET 11.** It started on the release-candidate packages and moved to .NET 11 GA (SDK `11.0.100`, packages `11.0.0`) on 2026-11-13 (D1).
 2. **Ports all of V1** into `AIStoryBuildersV2.Shared`:
    - stories, chapters, paragraphs, characters, locations and timelines
    - AI story generation and AI paragraph writing
@@ -91,7 +91,7 @@ The scaffold already has KGB's shape: a MAUI app, a WASM app, a Shared RCL, an A
 
 | ID | Decision | Rejected alternative | Why |
 |---|---|---|---|
-| D1 | **Target `net11.0` now** on the release-candidate packages: SDK `11.0.100-rc.3.26522.148`, ASP.NET Core `11.0.0-rc.3.26522.148`, MAUI `11.0.0-rc.2.26505.5`. Move to GA in a one-line follow-up when it ships. | Stay on net10 until GA | Feature #1 asks for .NET 11. The RC builds are installed and on nuget.org. |
+| D1 | **Target `net11.0` now** on the release-candidate packages: SDK `11.0.100-rc.3.26522.148`, ASP.NET Core `11.0.0-rc.3.26522.148`, MAUI `11.0.0-rc.2.26505.5`. Move to GA in a one-line follow-up when it ships. **Done 2026-11-13:** SDK `11.0.100`, ASP.NET Core and Extensions `11.0.0`, MAUI `11.0.0` (workload `maui-windows 11.0.0/11.0.100`). Aspire stays on `13.6.4` / `13.6.4-preview.1.26523.11`. | Stay on net10 until GA | Feature #1 asks for .NET 11. The RC builds are installed and on nuget.org. |
 | D2 | **Port from V1, not Online.** Take browser adaptations from Online file by file: the zip lifecycle, `BrowserEmbeddingGenerator`, `InputFile` import controls, the REST `GoogleAIChatClient`, and `GeminiToolSanitizer`. | Start from Online because it already runs in WASM | Online is an older V1. It has no World Facts and differs in 20+ files (§4.3). Feature #2 names V1. |
 | D3 | **WASM story storage = one base64 zip per story** in `localStorage`, using Online's zip layout under **new key names with an `asb2:` prefix** (`asb2:story:{Title}`), plus a JSON story index (`asb2:stories`). Saves are **debounced** after each mutation and flushed when the workspace closes. Quota errors raise `StorageQuotaExceededException` and show an error; they are never swallowed. | A key per file (the KGB pattern), or IndexedDB. Reusing Online's key names. | The user chose zip per story. It reuses Online's proven format. New names avoid clashing with Online if both are served from the same origin: Online's values are JSON-quoted (`SetItemAsync<T>`) and its index has a different shape ([AIStoryBuildersStoryService.cs:38-61](../../AIStoryBuildersOnline/Services/AIStoryBuildersStoryService.cs)). The quota risk is R1. |
 | D4 | **MAUI uses V1's folder `Documents\AIStoryBuilders` and V1's file formats unchanged.** V2 adds only `{Title}/KnowledgeBase/`. | A new folder, or a new format | The user chose it. Existing V1 stories appear right away. Coexistence rules are in §5.4. |
@@ -230,7 +230,7 @@ The scaffold already has KGB's shape: a MAUI app, a WASM app, a Shared RCL, an A
 
 | Item | Fact |
 |---|---|
-| .NET 11 | Not GA yet. nuget.org has `Microsoft.AspNetCore.Components.WebAssembly 11.0.0-rc.3.26522.148` and `Microsoft.Maui.Controls 11.0.0-rc.2.26505.5`. |
+| .NET 11 | Not GA yet. nuget.org has `Microsoft.AspNetCore.Components.WebAssembly 11.0.0-rc.3.26522.148` and `Microsoft.Maui.Controls 11.0.0-rc.2.26505.5`. **Update 2026-11-13:** .NET 11 is GA. nuget.org has `11.0.0` of Components.Web, Components.WebAssembly, DevServer, Logging.Debug and Extensions.Validation, and the solution uses them (D1). |
 | Aspire | `Aspire.AppHost.Sdk 13.6.4` and `Aspire.Hosting.Maui 13.6.4-preview.1.26523.11` are the latest. They have not been verified with a net11 MAUI project **(assumed to work; T0)**. |
 | Microsoft.Extensions.AI | Latest is 10.11.0. There is no 11.x package; it runs on net11 **(assumed)**. |
 | Radzen.Blazor | 12.1.11 is the latest. KGB pins 12.1.9 because its wiki-link handling was verified against that version. |
@@ -784,7 +784,7 @@ public class AIPrompt                                    // V1 model, plus one p
 { "sdk": { "version": "11.0.100", "rollForward": "latestFeature" } }
 ```
 
-The pin was `11.0.100-rc.3.26522.148` with `allowPrerelease: true` until a Visual Studio update replaced the rc.3 SDK with the GA `11.0.100` SDK. Only the SDK pin moved; the NuGet packages below are still the RC versions (D1).
+The pin was `11.0.100-rc.3.26522.148` with `allowPrerelease: true` until a Visual Studio update replaced the rc.3 SDK with the GA `11.0.100` SDK. The NuGet packages below then moved from the RC versions to GA 11.0.0 (D1).
 
 ```csharp
 // AppHost.cs (unchanged)
@@ -794,13 +794,13 @@ builder.AddProject<Projects.AIStoryBuildersV2_Web>("web");
 
 | Project | TFM after T0 | Package changes |
 |---|---|---|
-| MAUI | `net11.0-windows10.0.19041.0` always. `net11.0-android;net11.0-ios;net11.0-maccatalyst` only when `-p:IncludeMobileTargets=true` (default `false`), so restore does not need the mobile workloads. | `$(MauiVersion)` via the workload: 11.0.0-rc.2.26505.5 at T0, 11.0.0 since the SDK moved to 11.0.100. Add CommunityToolkit.Maui (a version that supports MAUI 11 **(assumed)**). Logging.Debug at 11.0.0-rc.3.26522.148. References `AIStoryBuildersV2.Embeddings.Onnx`. |
+| MAUI | `net11.0-windows10.0.19041.0` always. `net11.0-android;net11.0-ios;net11.0-maccatalyst` only when `-p:IncludeMobileTargets=true` (default `false`), so restore does not need the mobile workloads. | `$(MauiVersion)` = 11.0.0 via the workload (11.0.0-rc.2.26505.5 at T0). Add CommunityToolkit.Maui (a version that supports MAUI 11 **(assumed)**). Logging.Debug at 11.0.0. References `AIStoryBuildersV2.Embeddings.Onnx`. |
 | `AIStoryBuildersV2.Embeddings.Onnx` (new, D28) | `net11.0` | Microsoft.ML.OnnxRuntime 1.24.3 and Microsoft.Extensions.AI.Abstractions 10.11.0. The model and vocab come from V1 `Resources/Raw/` and are copied to the output. |
-| Web | `net11.0` | Components.WebAssembly and DevServer 11.0.0-rc.3.26522.148. Keep Blazored.LocalStorage 4.5.0. Add `TrimmerRootAssembly` for DocX (the `Xceed.*` assemblies), PdfPig, Newtonsoft.Json, Microsoft.Extensions.AI (and its Abstractions), OpenAI and YamlDotNet. Add `InvariantGlobalization=true` (D30). |
-| Shared | `net11.0` | Components.Web 11.0.0-rc.3.26522.148. Add DocX 5.0.0, PdfPig 0.1.14, Newtonsoft.Json 13.0.4, OllamaSharp 5.5.0, DiffPlex 1.9.0 (KB conflict diff). Keep Radzen `[12.1.9]` and the others at their current versions. |
+| Web | `net11.0` | Components.WebAssembly and DevServer 11.0.0. Keep Blazored.LocalStorage 4.5.0. Add `TrimmerRootAssembly` for DocX (the `Xceed.*` assemblies), PdfPig, Newtonsoft.Json, Microsoft.Extensions.AI (and its Abstractions), OpenAI and YamlDotNet. Add `InvariantGlobalization=true` (D30). |
+| Shared | `net11.0` | Components.Web 11.0.0. Add DocX 5.0.0, PdfPig 0.1.14, Newtonsoft.Json 13.0.4, OllamaSharp 5.5.0, DiffPlex 1.9.0 (KB conflict diff). Keep Radzen `[12.1.9]` and the others at their current versions. |
 | AppHost, ServiceDefaults, Tests | `net11.0` | AppHost falls back to `net10.0` if the Aspire SDK refuses net11 (R2). Tests reference Shared and `Embeddings.Onnx`. |
 
-**Workloads.** Before T0 the MAUI workloads were managed by Visual Studio (18.11) at the `11.0.100-preview.6` manifest. T0 installed a CLI-managed `maui-windows` workload, `11.0.0-rc.2.26505.5/11.0.100-rc.2`, with SDK 11.0.100-rc.3. Workloads belong to an SDK band, so the move to SDK `11.0.100` needed `maui-windows` installed again. It is now `11.0.0/11.0.100`, so `$(MauiVersion)` is 11.0.0 (Dev-Environment §2).
+**Workloads.** Before T0 the MAUI workloads were managed by Visual Studio (18.11) at the `11.0.100-preview.6` manifest. From T0 until 2026-11-13 they were a CLI-managed `maui-windows` workload, `11.0.0-rc.2.26505.5/11.0.100-rc.2`, with SDK 11.0.100-rc.3. Workloads belong to an SDK band, so the move to SDK `11.0.100` needed `maui-windows` installed again. It is now `11.0.0/11.0.100`, which matches `$(MauiVersion)` above (Dev-Environment §2).
 
 **Publishing WASM:** `dotnet publish AIStoryBuildersV2.Web -c Release` writes static files to `bin/Release/net11.0/publish/wwwroot`. The host must fall back to `index.html` and serve `.onnx` and `.wasm` with the right MIME types.
 
