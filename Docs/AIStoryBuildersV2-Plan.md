@@ -781,8 +781,10 @@ public class AIPrompt                                    // V1 model, plus one p
 
 ```json
 // global.json
-{ "sdk": { "version": "11.0.100-rc.3.26522.148", "rollForward": "latestFeature", "allowPrerelease": true } }
+{ "sdk": { "version": "11.0.100", "rollForward": "latestFeature" } }
 ```
+
+The pin was `11.0.100-rc.3.26522.148` with `allowPrerelease: true` until a Visual Studio update replaced the rc.3 SDK with the GA `11.0.100` SDK. Only the SDK pin moved; the NuGet packages below are still the RC versions (D1).
 
 ```csharp
 // AppHost.cs (unchanged)
@@ -792,13 +794,13 @@ builder.AddProject<Projects.AIStoryBuildersV2_Web>("web");
 
 | Project | TFM after T0 | Package changes |
 |---|---|---|
-| MAUI | `net11.0-windows10.0.19041.0` always. `net11.0-android;net11.0-ios;net11.0-maccatalyst` only when `-p:IncludeMobileTargets=true` (default `false`), so restore does not need the mobile workloads. | `$(MauiVersion)` = 11.0.0-rc.2.26505.5 via the workload. Add CommunityToolkit.Maui (a version that supports MAUI 11 **(assumed)**). Logging.Debug at 11.0.0-rc.3.26522.148. References `AIStoryBuildersV2.Embeddings.Onnx`. |
+| MAUI | `net11.0-windows10.0.19041.0` always. `net11.0-android;net11.0-ios;net11.0-maccatalyst` only when `-p:IncludeMobileTargets=true` (default `false`), so restore does not need the mobile workloads. | `$(MauiVersion)` via the workload: 11.0.0-rc.2.26505.5 at T0, 11.0.0 since the SDK moved to 11.0.100. Add CommunityToolkit.Maui (a version that supports MAUI 11 **(assumed)**). Logging.Debug at 11.0.0-rc.3.26522.148. References `AIStoryBuildersV2.Embeddings.Onnx`. |
 | `AIStoryBuildersV2.Embeddings.Onnx` (new, D28) | `net11.0` | Microsoft.ML.OnnxRuntime 1.24.3 and Microsoft.Extensions.AI.Abstractions 10.11.0. The model and vocab come from V1 `Resources/Raw/` and are copied to the output. |
 | Web | `net11.0` | Components.WebAssembly and DevServer 11.0.0-rc.3.26522.148. Keep Blazored.LocalStorage 4.5.0. Add `TrimmerRootAssembly` for DocX (the `Xceed.*` assemblies), PdfPig, Newtonsoft.Json, Microsoft.Extensions.AI (and its Abstractions), OpenAI and YamlDotNet. Add `InvariantGlobalization=true` (D30). |
 | Shared | `net11.0` | Components.Web 11.0.0-rc.3.26522.148. Add DocX 5.0.0, PdfPig 0.1.14, Newtonsoft.Json 13.0.4, OllamaSharp 5.5.0, DiffPlex 1.9.0 (KB conflict diff). Keep Radzen `[12.1.9]` and the others at their current versions. |
 | AppHost, ServiceDefaults, Tests | `net11.0` | AppHost falls back to `net10.0` if the Aspire SDK refuses net11 (R2). Tests reference Shared and `Embeddings.Onnx`. |
 
-**Workloads.** Before T0 the MAUI workloads were managed by Visual Studio (18.11) at the `11.0.100-preview.6` manifest. They are now a CLI-managed `maui-windows` workload, `11.0.0-rc.2.26505.5/11.0.100-rc.2`, installed by SDK 11.0.100-rc.3 (`dotnet workload list`), which matches `$(MauiVersion)` above.
+**Workloads.** Before T0 the MAUI workloads were managed by Visual Studio (18.11) at the `11.0.100-preview.6` manifest. T0 installed a CLI-managed `maui-windows` workload, `11.0.0-rc.2.26505.5/11.0.100-rc.2`, with SDK 11.0.100-rc.3. Workloads belong to an SDK band, so the move to SDK `11.0.100` needed `maui-windows` installed again. It is now `11.0.0/11.0.100`, so `$(MauiVersion)` is 11.0.0 (Dev-Environment §2).
 
 **Publishing WASM:** `dotnet publish AIStoryBuildersV2.Web -c Release` writes static files to `bin/Release/net11.0/publish/wwwroot`. The host must fall back to `index.html` and serve `.onnx` and `.wasm` with the right MIME types.
 
@@ -1093,7 +1095,7 @@ dotnet test AIStoryBuildersV2.Tests/AIStoryBuildersV2.Tests.csproj
 | R2 | The Aspire 13.6 AppHost or `Aspire.Hosting.Maui` rejects net11 | Medium | Keep the AppHost on `net10.0`, since it is dev-time only. If it still fails, launch with `dotnet run`. Neither app depends on Aspire. |
 | R3 | V1 and V2 editing the same MAUI story at the same time | Low | Documented. Last writer wins. |
 | R4 | WASM edits are lost if the tab closes within the debounce | Medium | A 1.5 s window, the `visibilitychange` flush, and a dirty indicator |
-| R5 | MAUI 11 RC workload mismatch: before T0 the manifests were at preview.6 and managed by Visual Studio | ~~High~~ Resolved in T0 | A CLI-managed rc.2 `maui-windows` workload is installed (§6.6). `IncludeMobileTargets=false` avoids needing the mobile workloads. |
+| R5 | MAUI 11 RC workload mismatch: before T0 the manifests were at preview.6 and managed by Visual Studio | ~~High~~ Resolved in T0 | A CLI-managed rc.2 `maui-windows` workload is installed (§6.6). `IncludeMobileTargets=false` avoids needing the mobile workloads. Any new SDK band needs `maui-windows` installed again; without it the build fails with `NETSDK1147` asking for `maui-tizen` (Dev-Environment §2). |
 | R6 | RC to GA breaking changes | Medium | One task to bump versions at GA |
 | R7 | Some providers or models reject `ToolMode.RequireAny` | Medium | Retry with `Auto` (§5.9) |
 | R8 | The 2,040-line `Story.cs` port causes regressions | Medium | Port it mechanically first (T2a–T2d), then cover it with V1 fixture byte tests |

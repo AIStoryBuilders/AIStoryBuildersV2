@@ -8,8 +8,8 @@ This file contains no secrets. Supply keys only through environment variables or
 | Item | Version | Notes |
 |---|---|---|
 | Windows | 10.0.19041 or later | The MAUI app's Windows TFM is `net11.0-windows10.0.19041.0` |
-| .NET SDK | `11.0.100-rc.3.26522.148` | Pinned in `global.json` after T0 (plan §6.6), with `allowPrerelease: true`. The .NET 10 SDKs can stay installed. |
-| MAUI workload | `maui-windows 11.0.0-rc.2.26505.5/11.0.100-rc.2` | CLI-managed, installed by SDK 11.0.100-rc.3 (`dotnet workload list`). Before T0 the workloads were managed by Visual Studio 18.11 at preview.6; §2 says how that was fixed. |
+| .NET SDK | `11.0.100` | Pinned in `global.json` (plan §6.6) with `rollForward: latestFeature`. It replaced the `11.0.100-rc.3.26522.148` pin when the GA SDK arrived through a Visual Studio update and removed rc.3. The NuGet packages are still the RC versions (plan D1). The .NET 10 SDKs can stay installed. |
+| MAUI workload | `maui-windows 11.0.0/11.0.100` (workload version `11.0.100.1`) | CLI-managed (`dotnet workload list`). It sets `$(MauiVersion)` to 11.0.0. Workloads belong to an SDK band, so a new SDK band needs the workload installed again (§2). |
 | Visual Studio | 18.x with the .NET MAUI workload | Optional for the Web app, practical for MAUI debugging |
 | Aspire | `Aspire.AppHost.Sdk 13.6.4`, `Aspire.Hosting.Maui 13.6.4-preview.1.26523.11` | Dev-time only (plan G1). The `aspire` CLI is optional. |
 | Node.js | not required | Use any static file server for the published WASM smoke test (§4). `npx serve -s` is one option. |
@@ -26,16 +26,19 @@ dotnet workload list
 
 ## 2. Workloads (T0)
 
-On the development machine this is done: a CLI-managed `maui-windows` workload is installed (§1). On a new machine, use one of these:
+Workloads are installed per SDK band. When a new SDK band is installed (for example, a Visual Studio update that installs a new SDK), the MAUI workload must be installed again for that band. If it isn't, the MAUI build fails with `NETSDK1147` and asks for `maui-tizen`. That message is misleading: install `maui-windows`, and don't run the `dotnet workload restore` it suggests, which would also pull in the Tizen and mobile workloads.
 
-1. Open **Visual Studio Installer**, update Visual Studio to a build that includes .NET 11 RC 3 MAUI, and keep the **.NET MAUI** workload selected.
-2. Alternatively, install a CLI-managed workload for the rc.3 SDK. Run it from a folder without a `global.json`, or after T0 has pinned 11.0:
+Use one of these:
+
+1. From the repo root, in an **elevated** (administrator) terminal, so that `global.json` selects the pinned SDK:
 
    ```bash
    dotnet workload install maui-windows
    ```
 
-3. Record the `dotnet workload list` output in the T0 commit.
+2. Alternatively, open **Visual Studio Installer**, choose **Modify**, and keep the **.NET MAUI** workload selected.
+
+Then check with `dotnet workload list` and the MAUI build command in AGENTS.md.
 
 Only `maui-windows` is needed by default. The mobile targets are built only with `-p:IncludeMobileTargets=true`.
 

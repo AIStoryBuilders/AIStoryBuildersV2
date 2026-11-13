@@ -43,7 +43,7 @@ The Android, iOS and Mac Catalyst targets are opt-in: pass `-p:IncludeMobileTarg
 
 ## Build and test
 
-Requires the .NET SDK `11.0.100-rc.3` (pinned in `global.json`) and the `maui-windows` workload.
+Requires the .NET SDK `11.0.100` (pinned in `global.json`) and the `maui-windows` workload.
 See [Docs/Dev-Environment.md](Docs/Dev-Environment.md).
 
 ```bash
